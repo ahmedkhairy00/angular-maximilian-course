@@ -68,12 +68,12 @@ Components are the fundamental building blocks of Angular. Each component typica
 > Use the `@Component` decorator to define a class as an Angular component. It metadata links the logic to the template and styles.
 
 ```typescript
-import { Component } from "@angular/core";
+import { Component } from '@angular/core';
 
 @Component({
-  selector: "app-user",
-  templateUrl: "./user.component.html",
-  styleUrls: ["./user.component.css"],
+  selector: 'app-user',
+  templateUrl: './user.component.html',
+  styleUrls: ['./user.component.css'],
   standalone: true,
   imports: [], // Add dependencies here
 })
@@ -115,6 +115,29 @@ Captures user interactions (like clicks) and executes logic in the component.
 <button (click)="onSelectUser()">Select User</button>
 ```
 
+### 4. Getters & Setters in Data Binding
+
+Getters and setters are standard OOP features used to encapsulate logic when reading or writing a property. In Angular, **getters** are incredibly useful for returning computed or dynamic values to the template.
+
+> [!TIP]
+> From the template's perspective, a getter is used just like a normal property (no parentheses are needed).
+
+```typescript
+export class AppComponent {
+  private _userCount = 0;
+
+  // Getter used as a property in HTML
+  get userCountDisplay(): string {
+    return `Total Users: ${this._userCount}`;
+  }
+}
+```
+
+```html
+<!-- No parentheses needed for getters! -->
+<h2>{{ userCountDisplay }}</h2>
+```
+
 ---
 
 ## ⚡ Angular Signals & Change Detection
@@ -131,16 +154,16 @@ Angular uses **Zone.js** by default to detect changes. However, **Signals** (int
 #### Working with Signals
 
 ```typescript
-import { signal, computed } from "@angular/core";
+import { signal, computed } from '@angular/core';
 
 // 1. Initialize
-const userName = signal("Ahmed");
+const userName = signal('Ahmed');
 
 // 2. Update (using previous value)
-userName.update((prev) => prev + " Master");
+userName.update((prev) => prev + ' Master');
 
 // 3. Set (direct update)
-userName.set("Mohamed");
+userName.set('Mohamed');
 
 // 4. Computed Signals (read-only, derived state)
 const upperName = computed(() => userName().toUpperCase());
