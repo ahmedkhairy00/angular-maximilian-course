@@ -1,3 +1,21 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* Import Google Fonts */
+ @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+/* Import Tailwind CSS */
 @import "tailwindcss";
+
+/* Reset All Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Set Google Fonts */
+body {
+    font-family: 'Inter', sans-serif;
+    /* I need Dark color */
+    background-color:linear-gradient(to bottom, #1e1e1e, #333333);
+}

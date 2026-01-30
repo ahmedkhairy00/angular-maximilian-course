@@ -151,6 +151,15 @@ Angular uses **Zone.js** by default to detect changes. However, **Signals** (int
 > [!NOTE]
 > A **Signal** is a "trackable data container" that notifies Angular exactly when its value changes, allowing for targeted UI updates.
 
+> [!NOTE]
+> A **Signal** is an object that stores a value (any type of value including nested objects).
+
+> [!NOTE]
+> A **Angular** Angular manages subscriptions to the signal to get notified about values changes
+
+> [!NOTE]
+> A **Computed Signal** is a "read-only, derived state" that is computed from other signals.
+
 #### Working with Signals
 
 ```typescript
@@ -168,6 +177,103 @@ userName.set('Mohamed');
 // 4. Computed Signals (read-only, derived state)
 const upperName = computed(() => userName().toUpperCase());
 ```
+
+---
+
+### 📥 Receiving Data: The @Input Decorator & Signals
+
+Imagine a component is like a small robot 🤖. To do its job, sometimes it needs information from its boss (the Parent Component).
+
+#### 1. The Classic Way: `@Input()`
+
+We use the `@Input()` decorator to create a "hole" or "slot" where data can be plugged in from the outside.
+
+```typescript
+// Standard input
+@Input() name!: string;
+
+// Mandatory input (The robot MUST have this to work!)
+// If the parent forgets this, the app will complain! ❌
+@Input({ required: true }) avatar!: string;
+```
+
+#### 2. The Modern Way: `input()` Signals ⚡
+
+Angular recently introduced a cooler way to handle inputs using **Signals**.
+
+```typescript
+// Mandatory input using Signals
+name = input.required<string>();
+
+// Input with a default value
+avatar = input<string>('default-image.png');
+```
+
+**Understanding Signal Inputs:**
+
+- **Read-Only**: Unlike standard variables, you **cannot** refresh a signal input manually using `.set()` or `.update()`. It only change when the parent sends new data! 🛡️
+- **Reactive**: The app knows exactly when the value changes, making it super fast.
+
+#### 3. Sending Data Back: The `@Output()` Decorator 📢
+
+If `@Input` is about receiving a gift, `@Output` is about **sending a signal** when something happens!
+
+**The Doorbell Analogy:**
+Imagine the Child component is a visitor at the Parent's house.
+
+- The visitor (Child) doesn't just walk in.
+- Instead, they press a **Doorbell (The Event)**.
+- The Parent hears the doorbell and decides what to do! 🚪🔔
+
+**How it works in code:**
+
+1. **Child Side**: We create an `EventEmitter`.
+
+```typescript
+@Output() selectUser = new EventEmitter<string>();
+
+onSelectUser() {
+  this.selectUser.emit(this.id); // "Ding Dong! Here is the ID!"
+}
+```
+
+2. **Parent Side**: We "listen" for that event using parentheses `()`.
+
+```html
+<app-user (selectUser)="onSelectUser($event)" />
+```
+
+> [!NOTE]
+> **$event** is a special keyword. It holds the "data" that the child sent (in this case, the User ID).
+
+---
+
+### 🔄 Summary: How Data Moves
+
+| Feature    | Direction       | Symbol | Real-life Example                   |
+| :--------- | :-------------- | :----- | :---------------------------------- |
+| **Input**  | Parent ➡️ Child | `[ ]`  | Postman giving you mail 📬          |
+| **Output** | Child ➡️ Parent | `( )`  | Pressing a doorbell to say "Hi!" 🔔 |
+
+![Data Flow Diagram](public/images/input-output-flow.png)
+_Inputs go IN [ ], Outputs go OUT ( )_
+
+---
+
+#### 4. Transforming Data: Getters vs computed() 🛠️
+
+Sometimes we need to change the data before showing it (like adding a file path to an image name).
+
+| Technique    | Example                                         | Best For                 |
+| :----------- | :---------------------------------------------- | :----------------------- |
+| **Getter**   | `get path() { return 'img/' + this.avatar; }`   | Classic `@Input`         |
+| **Computed** | `path = computed(() => 'img/' + this.avatar())` | Modern `input()` Signals |
+
+**Why `computed()` is better?**
+It only runs when its dependencies (the signals inside it) change. A getter runs much more often, which can slow down huge apps! 🐢 -> 🚀
+
+![Input Data Flow](public/images/input-flow.png)
+_Data flows from the Parent into the Child "Mailbox"_
 
 ---
 

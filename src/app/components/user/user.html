@@ -1,0 +1,7 @@
+<div>
+    <button (click)="onSelectUser() "
+        class="flex items-center gap-4 bg-orange-500 p-4 rounded-lg !px-6 py-4 !my-2 w-75  hover:bg-orange-700 cursor-pointer">
+        <img class="w-12 h-12 rounded-full" [src]="imagePath" [alt]="name" [aria-label]="name">
+        <span class="text-white text-2xl">{{name}}</span>
+    </button>
+</div>
