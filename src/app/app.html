@@ -1,5 +1,5 @@
 <app-header></app-header>
-<main class="w-1/2 !py-[20px] flex gap-4">
+<main class="!py-[20px] flex gap-4 m-[50px]">
   <ul id="users">
     <li>
       <app-user
@@ -43,7 +43,7 @@
     </li>
   </ul>
   <div class="w-full h-full">
-    <h2>Selected User</h2>
+    <h2 class="text-2xl font-bold">Selected User</h2>
     <app-user-tasks [name]="selectedUser"></app-user-tasks>
   </div>
 </main>

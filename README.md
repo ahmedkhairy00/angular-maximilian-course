@@ -255,7 +255,7 @@ onSelectUser() {
 | **Input**  | Parent ➡️ Child | `[ ]`  | Postman giving you mail 📬          |
 | **Output** | Child ➡️ Parent | `( )`  | Pressing a doorbell to say "Hi!" 🔔 |
 
-![Data Flow Diagram](public/images/input-output-flow.png)
+![Data Flow Diagram](public/images/output-flow.png)
 _Inputs go IN [ ], Outputs go OUT ( )_
 
 ---
