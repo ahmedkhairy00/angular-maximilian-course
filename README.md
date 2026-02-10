@@ -180,71 +180,105 @@ const upperName = computed(() => userName().toUpperCase());
 
 ---
 
-### 📥 Receiving Data: The @Input Decorator & Signals
+### 📥 Receiving Data: Component Inputs (`@Input` & `input()`)
 
-Imagine a component is like a small robot 🤖. To do its job, sometimes it needs information from its boss (the Parent Component).
+According to the [Official Angular Documentation](https://angular.dev/guide/components/inputs), inputs allow a parent component to pass data to a child component. This establishes a "Top-to-Bottom" data flow.
 
-#### 1. The Classic Way: `@Input()`
+#### 1. The Traditional Way: `@Input()` Decorator
 
-We use the `@Input()` decorator to create a "hole" or "slot" where data can be plugged in from the outside.
-
-```typescript
-// Standard input
-@Input() name!: string;
-
-// Mandatory input (The robot MUST have this to work!)
-// If the parent forgets this, the app will complain! ❌
-@Input({ required: true }) avatar!: string;
-```
-
-#### 2. The Modern Way: `input()` Signals ⚡
-
-Angular recently introduced a cooler way to handle inputs using **Signals**.
+We use the `@Input()` decorator to mark a class field as a property that can receive values from the parent.
 
 ```typescript
-// Mandatory input using Signals
-name = input.required<string>();
+import { Component, Input } from '@angular/core';
 
-// Input with a default value
-avatar = input<string>('default-image.png');
-```
-
-**Understanding Signal Inputs:**
-
-- **Read-Only**: Unlike standard variables, you **cannot** refresh a signal input manually using `.set()` or `.update()`. It only change when the parent sends new data! 🛡️
-- **Reactive**: The app knows exactly when the value changes, making it super fast.
-
-#### 3. Sending Data Back: The `@Output()` Decorator 📢
-
-If `@Input` is about receiving a gift, `@Output` is about **sending a signal** when something happens!
-
-**The Doorbell Analogy:**
-Imagine the Child component is a visitor at the Parent's house.
-
-- The visitor (Child) doesn't just walk in.
-- Instead, they press a **Doorbell (The Event)**.
-- The Parent hears the doorbell and decides what to do! 🚪🔔
-
-**How it works in code:**
-
-1. **Child Side**: We create an `EventEmitter`.
-
-```typescript
-@Output() selectUser = new EventEmitter<string>();
-
-onSelectUser() {
-  this.selectUser.emit(this.id); // "Ding Dong! Here is the ID!"
+@Component({ ... })
+export class ChildComponent {
+  // Use '!' to tell TypeScript the value will come from outside
+  @Input({ required: true }) name!: string;
+  @Input() avatar: string = 'default.png'; // With default value
 }
 ```
 
-2. **Parent Side**: We "listen" for that event using parentheses `()`.
+**How to pass data in the Parent Template:**
 
 ```html
-<app-user (selectUser)="onSelectUser($event)" />
+<app-child [name]="currentUserName" [avatar]="userImage" />
 ```
 
-> [!NOTE]
-> **$event** is a special keyword. It holds the "data" that the child sent (in this case, the User ID).
+#### 2. The Modern Way: Signal Inputs (`input()`) ⚡
+
+Introduced in recent Angular versions, Signal inputs are a reactive way to handle data. They are **read-only** signals that notify Angular when the value changes.
+
+```typescript
+import { Component, input } from '@angular/core';
+
+export class ChildComponent {
+  // Required signal input
+  name = input.required<string>();
+
+  // Optional signal input with default value
+  avatar = input('default.png');
+}
+```
+
+**Key Advantages of Signal Inputs:**
+
+- **Reactivity**: Automatically trigger updates in `computed` signals.
+- **Type Safety**: Better type inference than decorators.
+- **Performance**: More efficient change detection.
+
+![Angular Input Flow](public/images/input-flow.png)
+_Data flows from Parent ➡️ Child_
+
+### 📢 Sending Data Back: Component Outputs (`@Output` & `output()`)
+
+Outputs allow a child component to raise events that the parent can listen to. This is how data flows "Bottom-to-Top."
+
+#### 1. The Traditional Way: `@Output()` Decorator
+
+We use `@Output()` with an `EventEmitter` to create a custom event.
+
+```typescript
+import { Component, Output, EventEmitter } from '@angular/core';
+
+@Component({ ... })
+export class ChildComponent {
+  @Output() select = new EventEmitter<string>();
+
+  onButtonClicked() {
+    this.select.emit('Some Data'); // Sends data to parent
+  }
+}
+```
+
+**How to listen in the Parent Template:**
+
+```html
+<app-child (select)="handleSelection($event)" />
+```
+
+> [!TIP]
+> **$event** contains the data emitted from the child.
+
+#### 2. The Modern Way: Signal Outputs (`output()`) ⚡
+
+The `output()` function is a simpler, more type-safe alternative to `@Output()`.
+
+```typescript
+import { Component, output } from '@angular/core';
+
+export class ChildComponent {
+  // Creates an output without needing EventEmitter manually
+  select = output<string>();
+
+  onButtonClicked() {
+    this.select.emit('New Data');
+  }
+}
+```
+
+![Angular Output Flow](public/images/output-flow.png)
+_Events flow from Child ➡️ Parent_
 
 ---
 

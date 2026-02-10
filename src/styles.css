@@ -6,6 +6,9 @@
 /* Import Tailwind CSS */
 @import "tailwindcss";
 
+.active {
+  @apply bg-purple-900;
+}
 /* Reset All Styles */
 * {
     margin: 0;
@@ -17,5 +20,6 @@
 body {
     font-family: 'Inter', sans-serif;
     /* I need Dark color */
-    background-color:linear-gradient(to bottom, #1e1e1e, #333333);
+    background-color: darkslateblue;
 }
+

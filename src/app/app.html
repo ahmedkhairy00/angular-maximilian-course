@@ -1,49 +1,21 @@
 <app-header></app-header>
-<main class="!py-[20px] flex gap-4 m-[50px]">
+<main class="!py-[20px] flex gap-4 !m-auto w-[80%]">
   <ul id="users">
-    <li>
-      <app-user
-        [id]="users[0].id"
-        [avatar]="users[0].avatar"
-        [name]="users[0].name"
-        (selectUser)="onSelectUser($event)"
-      />
-    </li>
-    <li>
-      <app-user
-        [id]="users[1].id"
-        [avatar]="users[1].avatar"
-        [name]="users[1].name"
-        (selectUser)="onSelectUser($event)"
-      />
-    </li>
-    <li>
-      <app-user
-        [id]="users[2].id"
-        [avatar]="users[2].avatar"
-        [name]="users[2].name"
-        (selectUser)="onSelectUser($event)"
-      />
-    </li>
-    <li>
-      <app-user
-        [id]="users[3].id"
-        [avatar]="users[3].avatar"
-        [name]="users[3].name"
-        (selectUser)="onSelectUser($event)"
-      />
-    </li>
-    <li>
-      <app-user
-        [id]="users[4].id"
-        [avatar]="users[4].avatar"
-        [name]="users[4].name"
-        (selectUser)="onSelectUser($event)"
-      />
-    </li>
+    @for (user of users; track user.id) {
+      <li>
+        <app-user
+          [selected]="user.id === selectedUser?.id"
+          [user]="user"
+          (selectUser)="onSelectUser($event)"
+        />
+      </li>
+    }
   </ul>
-  <div class="w-full h-full">
-    <h2 class="text-2xl font-bold">Selected User</h2>
-    <app-user-tasks [name]="selectedUser"></app-user-tasks>
+  <div class="w-full !p-[20px] text-center">
+    @if (selectedUser) {
+      <app-user-tasks [user]="selectedUser"></app-user-tasks>
+    } @else {
+      <p class="text-white text-2xl text-center">Select a User to see their tasks!</p>
+    }
   </div>
 </main>

@@ -1,0 +1,65 @@
+<!-- Style Form By css file not tailwind -->
+<div class="backdrop" (click)="onCancelAddTask()">
+  <section class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <header class="modal-header">
+        <h2>
+          <span class="icon-box">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+          </span>
+          <span>Add New Task</span>
+        </h2>
+        <p>Fill in the details below to organize your work.</p>
+      </header>
+
+      <form (submit)="onSubmit()" class="task-form">
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input
+            type="text"
+            placeholder="What needs to be done?"
+            name="title"
+            id="title"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="summary">Summary</label>
+          <textarea
+            placeholder="Add some details about this task..."
+            name="summary"
+            id="summary"
+            rows="4"
+            class="form-control"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="due-date">Due Date</label>
+          <input type="date" name="due-date" id="due-date" class="form-control" />
+        </div>
+
+        <!-- have user id -->
+        <input type="hidden" />
+
+        <div class="form-actions">
+          <button type="button" (click)="onCancelAddTask()" class="btn btn-cancel">Cancel</button>
+          <button type="submit" class="btn btn-submit">Create Task</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>

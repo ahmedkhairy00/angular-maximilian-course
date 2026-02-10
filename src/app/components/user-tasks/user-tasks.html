@@ -1,7 +1,37 @@
-<div class="user-tasks" class="w-1/2 !p-[20px] flex gap-4 bg-purple-500 w-full">
-  @if (name) {
-    <h2 class="text-2xl font-bold text-white">{{ name }}</h2>
-  } @else {
-    <h2 class="text-2xl font-bold text-white">No Selected User !</h2>
-  }
-</div>
+@if (isAddingTask) {
+  <app-new-task (cancelAddTask)="onCancelAddTask()" />
+}
+
+<section
+  id="tasks"
+  class="user-tasks"
+  class="!p-[20px] flex w-full overflow-y-auto flex-col bg-purple-950"
+>
+  <header class="flex justify-between items-center !p-[20px] rounded-lg">
+    <h2 class="text-2xl font-bold text-white">{{ user?.name }}'s Tasks</h2>
+    <button
+      (click)="addTask()"
+      class="!p-[5px_20px] bg-pink-900 text-white text-xl font-bold cursor-pointer hover:bg-purple-900"
+    >
+      Add Task
+    </button>
+  </header>
+  <div class="tasks !p-[20px] rounded-lg">
+    @for (task of userTasks; track task.id) {
+      <div
+        class="task bg-purple-800 !p-[20px] !my-4 rounded-lg text-white flex !justify-start flex-col"
+      >
+        <h2 class="text-white text-4xl font-bold">Task {{ task.title }}</h2>
+        <time class="text-white text-xl !mb-3 !mt-2">{{ task.dueDate }}</time>
+        <p class="text-white text-xl">{{ task.summary }}</p>
+
+        <button
+          (click)="onCompleteTask(task.id)"
+          class="bg-purple-900 !py-3 !px-[15px] rounded !ml-[70%] !my-2 cursor-pointer"
+        >
+          Complete
+        </button>
+      </div>
+    }
+  </div>
+</section>
