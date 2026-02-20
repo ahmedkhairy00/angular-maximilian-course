@@ -1,11 +1,13 @@
 import { Component, Input } from '@angular/core';
-import { Task } from './task.model';
+import { newTaskData, Task } from './task.model';
 import { NewTask } from './new-task/new-task';
+import {DatePipe} from '@angular/common';
+import { TaskService } from './task-service';
 
 @Component({
   selector: 'app-user-tasks',
+  imports:[DatePipe,NewTask],
   standalone: true,
-  imports: [NewTask],
   templateUrl: './user-tasks.html',
   styleUrl: './user-tasks.css',
 })
@@ -13,44 +15,56 @@ export class UserTasks {
   @Input({ required: true }) user?: { id: string; name: string; avatar: string };
   
   isAddingTask = false;
+  isEditing = false;
+  taskId !: string ;
+  editingTaskData?: newTaskData;
 
-  private tasks = [
-    {
-      id: 't1',
-      userId: 'u1',
-      title: 'Master Angular',
-      summary: 'Learn all the basic and advanced features of Angular & how to apply them.',
-      dueDate: '2025-12-31',
-    },
-    {
-      id: 't2',
-      userId: 'u3',
-      title: 'Build first prototype',
-      summary: 'Build a first prototype of the online shop app.',
-      dueDate: '2024-05-31',
-    },
-    {
-      id: 't3',
-      userId: 'u3',
-      title: 'Prepare issue template',
-      summary: 'Prepare and describe an issue template which will help with project management',
-      dueDate: '2024-06-15',
-    },
-  ];
+  /**
+   *
+   */
+  constructor( private taskService : TaskService) {
+    
+  }
+   
 
   get userTasks() {
-    return this.tasks.filter((task) => task.userId === this.user?.id);
+    return  this.taskService.getUserTasks(this.user!.id);
   }
 
   onCompleteTask(id: string) {
-    this.tasks = this.tasks.filter((task) => task.id !== id);
+    this.taskService.removeTask(id);
   }
 
   addTask() {
     this.isAddingTask = true;
+    this.isEditing = false;
+    this.editingTaskData = undefined;
   }
 
   onCancelAddTask() {
     this.isAddingTask = false;
+    this.isEditing = false;
+  }
+
+  onAddTask(taskData : newTaskData){
+    this.taskService.addTask(taskData , this.user!.id);
+    this.isAddingTask = false;
+  }
+
+  onStartEditTask(task: Task) {
+    this.isAddingTask = true;
+    this.isEditing = true;
+    this.taskId = task.id;
+    this.editingTaskData = {
+      title: task.title,
+      summary: task.summary,
+      date: task.dueDate
+    };
+  }
+
+  onUpdateTask(event : {id : string , taskData : newTaskData}){
+    this.taskService.updateTask(event.id , event.taskData);
+    this.isAddingTask = false;
+    this.isEditing = false;
   }
 }

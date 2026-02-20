@@ -1,5 +1,5 @@
 <!-- Style Form By css file not tailwind -->
-<div class="backdrop" (click)="onCancelAddTask()">
+<div class="backdrop">
   <section class="modal" (click)="$event.stopPropagation()">
     <div class="modal-content">
       <header class="modal-header">
@@ -19,12 +19,12 @@
               />
             </svg>
           </span>
-          <span>Add New Task</span>
+          <span>{{ isEditing ? 'Edit Task' : 'Add Task' }}</span>
         </h2>
         <p>Fill in the details below to organize your work.</p>
       </header>
 
-      <form (submit)="onSubmit()" class="task-form">
+      <form (ngSubmit)="onSubmit()" class="task-form">
         <div class="form-group">
           <label for="title">Title</label>
           <input
@@ -33,6 +33,7 @@
             name="title"
             id="title"
             class="form-control"
+            [(ngModel)]="enteredTitle"
           />
         </div>
 
@@ -44,12 +45,19 @@
             id="summary"
             rows="4"
             class="form-control"
+            [(ngModel)]="enterdSummary"
           ></textarea>
         </div>
 
         <div class="form-group">
           <label for="due-date">Due Date</label>
-          <input type="date" name="due-date" id="due-date" class="form-control" />
+          <input
+            type="date"
+            name="due-date"
+            id="due-date"
+            class="form-control"
+            [(ngModel)]="enteredDate"
+          />
         </div>
 
         <!-- have user id -->
@@ -57,7 +65,9 @@
 
         <div class="form-actions">
           <button type="button" (click)="onCancelAddTask()" class="btn btn-cancel">Cancel</button>
-          <button type="submit" class="btn btn-submit">Create Task</button>
+          <button type="submit" class="btn btn-submit">
+            {{ isEditing ? 'Update' : 'Create' }}
+          </button>
         </div>
       </form>
     </div>
