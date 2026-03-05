@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
-import { newTaskData } from './task.model';
+import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { newTaskData, Task } from './task.model';
 import { NewTask } from './new-task/new-task';
 
 @Injectable({
@@ -8,7 +9,9 @@ import { NewTask } from './new-task/new-task';
 export class TaskService {
 
   // Private Data => Not Accessible From Outside
- private tasks = [
+
+  tasksCount = computed(() => this.tasks().length);
+ private tasks = signal<Task[]> ( [
       {
         id: 't1',
         userId: 'u1',
@@ -30,60 +33,86 @@ export class TaskService {
         summary: 'Prepare and describe an issue template which will help with project management',
         dueDate: '2024-06-15',
       },
-    ];
+    ]);
 
     /**
      *
      */
+    private platformId = inject(PLATFORM_ID);
+
     constructor() {
-       
-      const tasks = localStorage.getItem('tasks');
-      if(tasks){
-        this.tasks = JSON.parse(tasks);
+      if (isPlatformBrowser(this.platformId)) {
+        const tasks = localStorage.getItem('tasks');
+        if(tasks && tasks !== 'undefined'){
+          this.tasks.set(JSON.parse(tasks));
+        }
+        console.log(this.tasksCount());
       }
     }
    // get User Tasks
    
    getUserTasks(id : string){
-    return this.tasks.filter(task => task.userId === id);
+
+    console.log('get user tasks', this.getUserTasksCount(id));
+    return this.tasks().filter(task => task.userId === id);
    }
 
    // Remove Task
-   removeTask(id : string){
-    this.tasks = this.tasks.filter((task) => task.id !== id);
+   removeTask(id : string): void{
+
+    // remove task form sginals array use set ot update
+    this.tasks.set(this.tasks().filter(task => task.id !== id));
     this.saveTasks();
+    console.log(this.tasksCount());
+
    }
 
 
    // Add Task
 
    addTask(taskData : newTaskData , userId : string){
-    this.tasks.unshift({
+    this.tasks.update((tasks) => [{
       id : crypto.randomUUID(),
       userId : userId,
       title : taskData.title,
       summary : taskData.summary,
-      dueDate : taskData.date,
-    });
+      // must date be in future if user want create user in past will be now
+      dueDate : taskData.date < new Date().toISOString().split('T')[0] ? new Date().toISOString().split('T')[0] : taskData.date
+    },
+        ...tasks
+    ]);
+    
     this.saveTasks();
+    console.log(this.tasksCount());
 
    }
 
    // Update Task
 
    updateTask(taskId : string , taskData : newTaskData){
-    
-    const selectedTask = this.tasks.find(task => task.id == taskId);
-    if(selectedTask){
-      selectedTask.title = taskData.title;
-      selectedTask.summary = taskData.summary;
-      selectedTask.dueDate = taskData.date;
-    }
+    this.tasks.update(tasks => tasks.map(task => {
+      if(task.id === taskId) {
+        return {
+          ...task,
+          title: taskData.title,
+          summary: taskData.summary,
+          dueDate: taskData.date < new Date().toISOString().split('T')[0] ? new Date().toISOString().split('T')[0] : taskData.date
+        };
+      }
+      console.log(this.tasksCount());
+      return task;
+    }));
     this.saveTasks();
    }
 
    private saveTasks(){
-    localStorage.setItem('tasks', JSON.stringify(this.tasks));
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem('tasks', JSON.stringify(this.tasks()));
+    }
+   }
+
+   getUserTasksCount(id : string){
+    return this.tasks().filter(task => task.userId === id).length;
    }
 
 

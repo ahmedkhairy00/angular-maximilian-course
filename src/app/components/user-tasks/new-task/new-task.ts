@@ -1,12 +1,16 @@
 import {
   Component,
   EventEmitter,
+  inject,
+  input,
   Input,
   OnChanges,
   OnInit,
   Output,
+  PLATFORM_ID,
   SimpleChanges,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { newTaskData } from '../task.model';
 
@@ -18,31 +22,31 @@ import { newTaskData } from '../task.model';
   styleUrl: './new-task.css',
 })
 export class NewTask implements OnInit, OnChanges {
+  // Signal-based inputs for better reactivity
+  userId = input.required<string>();
+  
+  // Traditional inputs (keeping these for now as they work fine)
   @Input() taskId!: string;
   @Input() isEditing!: boolean;
   @Input() taskData?: newTaskData;
 
   @Output() cancelAddTask = new EventEmitter<void>();
-
-  // emmit new Event to Add New Task
   @Output() addNewTask = new EventEmitter<newTaskData>();
   @Output() editTask = new EventEmitter<{ id: string; taskData: newTaskData }>();
 
-  // Properties bound to [(ngModel)] in the template
   enteredTitle = '';
   enterdSummary = '';
   enteredDate = '';
 
-  constructor() {
-    this.resetForm();
-  }
+  private platformId = inject(PLATFORM_ID);
 
   ngOnInit(): void {
     this.updateFormValues();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['taskData'] || changes['isEditing']) {
+    // If any relevant input changes, re-evaluate values
+    if (changes['taskData'] || changes['isEditing'] || changes['userId']) {
       this.updateFormValues();
     }
   }
@@ -53,6 +57,29 @@ export class NewTask implements OnInit, OnChanges {
       this.enterdSummary = this.taskData.summary;
       this.enteredDate = this.taskData.date;
     } else {
+      // Load draft if creating a new task
+      if (isPlatformBrowser(this.platformId)) {
+        // 1. Try user-specific draft
+        const id = this.userId();
+        let savedData = localStorage.getItem('draft_task_' + id);
+        
+        // 2. Fallback to generic 'taskData' if user-specific draft is missing
+        if (!savedData) {
+          savedData = localStorage.getItem('taskData');
+        }
+
+        if (savedData) {
+          try {
+            const draft = JSON.parse(savedData);
+            this.enteredTitle = draft.title || '';
+            this.enterdSummary = draft.summary || '';
+            this.enteredDate = draft.date || new Date().toISOString().split('T')[0];
+            return;
+          } catch (e) {
+            console.error('Error parsing draft data', e);
+          }
+        }
+      }
       this.resetForm();
     }
   }
@@ -257,8 +284,7 @@ export class TaskService {
    like removeTask() , addTask() , updateTask()
 */
 
-
- private resetForm(): void {
+  private resetForm(): void {
     this.enteredTitle = '';
     this.enterdSummary = '';
     this.enteredDate = new Date().toISOString().split('T')[0];
@@ -266,6 +292,16 @@ export class TaskService {
 
   onCancelAddTask() {
     this.cancelAddTask.emit();
+
+    // Save user data in localStorage when cancel add task
+    if (isPlatformBrowser(this.platformId) && !this.isEditing) {
+      const id = this.userId();
+      localStorage.setItem('draft_task_' + id, JSON.stringify({
+        title: this.enteredTitle,
+        summary: this.enterdSummary,
+        date: this.enteredDate,
+      }));
+    }
   }
 
   onSubmit() {
@@ -279,19 +315,18 @@ export class TaskService {
         },
       });
     } else {
-      // Submit logic
-     this.addNewTask.emit({
+      // Clear draft on successful submission
+      if (isPlatformBrowser(this.platformId)) {
+        const id = this.userId();
+        localStorage.removeItem('draft_task_' + id);
+        localStorage.removeItem('taskData'); // Clear legacy key too
+      }
+      
+      this.addNewTask.emit({
         title: this.enteredTitle,
         summary: this.enterdSummary,
         date: this.enteredDate,
-    });
+      });
     }
   }
-
-  /* 
-     NOTES ON DIRECTIVES IN ANGULAR:
-     - Directives enhance elements by adding behavior.
-     - Component is a directive with a template.
-     - NgModel (from FormsModule) provides two-way data binding.
-  */
 }

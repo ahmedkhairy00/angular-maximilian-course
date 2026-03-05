@@ -464,4 +464,208 @@ if (savedTasks) {
 
 ---
 
+## 🛡️ SSR Safety: `isPlatformBrowser`
+
+When building Angular apps with **Server-Side Rendering (SSR)**, your code runs in two places: the **Server** (Node.js) and the **Browser**.
+
+> [!WARNING]
+> Objects like `window`, `document`, and `localStorage` **do not exist** on the server. If your code tries to access `localStorage` while rendering on the server, the app will crash! 💥
+
+### How to use it safely:
+
+According to [Angular Common API](https://angular.dev/api/common/isPlatformBrowser), we must check if we are on the browser before using browser-only features.
+
+**Step-by-Step Implementation:**
+
+1.  **Inject PLATFORM_ID**: This tells Angular which platform is currently running the code.
+2.  **Import isPlatformBrowser**: A utility function from `@angular/common`.
+3.  **The Guard**: Wrap your browser-only code in an `if` statement.
+
+```typescript
+import { inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+
+export class MyService {
+  private platformId = inject(PLATFORM_ID);
+
+  init() {
+    if (isPlatformBrowser(this.platformId)) {
+      // ✅ Safe to use localStorage here!
+      const data = localStorage.getItem('my-data');
+    }
+  }
+}
+```
+
+---
+
+## 📝 Step-by-Step: Form Population for "Edit Mode"
+
+When a junior developer sees an "Edit" form, they often wonder: _"How did the data get from the list into these input fields?"_
+
+Here is the professional flow used in this project:
+
+### 1. The Parent Prepares the Data
+
+The parent component knows which task was clicked. It passes that `taskData` and an `isEditing` flag to the child component.
+
+```html
+<app-new-task [isEditing]="true" [taskData]="selectedTask" (editTask)="onUpdateTask($event)" />
+```
+
+### 2. The Child Listens for Changes (`ngOnChanges`)
+
+In the Child Component (`new-task.ts`), we use the `ngOnChanges` or `ngOnInit` lifecycle hooks to "pre-populate" our local form variables.
+
+```typescript
+ngOnChanges(changes: SimpleChanges): void {
+  if (this.isEditing && this.taskData) {
+    // Fill the variables that are bound to the HTML
+    this.enteredTitle = this.taskData.title;
+    this.enterdSummary = this.taskData.summary;
+    this.enteredDate = this.taskData.date;
+  }
+}
+```
+
+### 3. The HTML Mirrors the Data (`[(ngModel)]`)
+
+Because we use **Two-Way Binding**, the HTML `<input>` automatically shows whatever value is in `enteredTitle`.
+
+```html
+<input [(ngModel)]="enteredTitle" name="title" />
+```
+
+> [!TIP]
+> This pattern ensures that the form is always "synced". If the parent gives us a new task to edit, `ngOnChanges` fires, updates the variables, and the UI updates instantly! 🔄
+
+---
+
+## 💾 Robust UX: Saving Form Drafts to `localStorage`
+
+A Senior Architect ensures that even if a user accidentally closes a form, their progress isn't lost. This is called **Persistence**.
+
+### The Flow of a Persistent Draft:
+
+1.  **Saving on Close**: When the user clicks "Cancel", we save their current typing into `localStorage` using a unique key (like `draft_task_u1`).
+
+    ```typescript
+    localStorage.setItem('draft_task_' + userId, JSON.stringify({ title, summary, date }));
+    ```
+
+2.  **Loading on Open**: When the component starts (`ngOnInit`), we check if a draft exists for the current user.
+    - **Step 1**: Check if `isPlatformBrowser` is true.
+    - **Step 2**: Search for `draft_task_` + the current user's ID.
+    - **Step 3**: If found, `JSON.parse` it and assign the values to our form variables.
+
+3.  **Clearing on Success**: Once the user actually clicks "Submit" and the task is saved, we **delete** the draft so it doesn't pop up again.
+    ```typescript
+    localStorage.removeItem('draft_task_' + userId);
+    ```
+
+> [!IMPORTANT]
+> **Why user-specific keys?**
+> If User A types a draft and logs out, User B shouldn't see User A's draft! Using `draft_task_` + `userId` ensures data privacy and a personalized experience. 🛡️
+
+---
+
+---
+
+## 🚦 Senior Mastery: CRUD with Signal Arrays ⚡
+
+Managing arrays in signals requires an **immutable mindset**. According to [Angular Documentation](https://angular.dev/guide/signals), you should never mutate the value inside a signal directly (e.g., `tasks().push()`). Instead, always use `.set()` or `.update()` with a new array reference.
+
+### 1. Create (Add Item)
+
+Use `.update()` to prepend or append a new item using the spread operator.
+
+```typescript
+this.tasks.update((prevTasks) => [
+  { id: 't4', title: 'New Task', ... },
+  ...prevTasks
+]);
+```
+
+### 2. Read
+
+Signals are functions. Call them to get the current value.
+
+```typescript
+const allTasks = this.tasks();
+const specificTasks = this.tasks().filter((t) => t.userId === 'u1');
+```
+
+### 3. Update (Modify Item)
+
+Use `.update()` combined with `.map()` to create a new array where only the specific item is changed. This ensures Angular's change detection is triggered correctly.
+
+```typescript
+this.tasks.update((tasks) =>
+  tasks.map((task) => (task.id === targetId ? { ...task, title: 'Updated Title' } : task)),
+);
+```
+
+### 4. Delete (Remove Item)
+
+Use `.update()` combined with `.filter()` to create a new array excluding the item.
+
+```typescript
+this.tasks.update((tasks) => tasks.filter((task) => task.id !== targetId));
+```
+
+> [!IMPORTANT]
+> **Why Immutability?**
+> Angular Signals rely on reference changes to notify consumers. If you mutate an object inside an array without changing the array's reference, components using the signal might not refresh! Always return a **new array** and **new objects** for the items you change.
+
+---
+
+---
+
+## 🎓 Study Notes: Services & Dependency Injection (DI)
+
+These notes were extracted from component logic to provide a clear architectural overview of how Angular handles data and dependencies.
+
+### 1. Creating a Service
+
+Services are centralized classes for data logic. Use the CLI to generate them:
+`ng generate service <name>`
+
+### 2. Dependency Injection (DI) Patterns
+
+DI is a design pattern used to inject services into components. There are two modern ways:
+
+#### A. Constructor Injection
+
+```typescript
+constructor(private taskService: TaskService) {
+  // Access data immediately
+  this.tasks = this.taskService.getUserTasks(this.userId);
+}
+```
+
+#### B. The `inject()` Function (Modern Clean Code)
+
+```typescript
+import { inject } from '@angular/core';
+private taskService = inject(TaskService);
+```
+
+> [!IMPORTANT]
+> **Singleton vs. Scoped Service**
+> Using `providedIn: 'root'` ensures the service is a **Singleton** (shared instance). If you create a new instance manually with `new TaskService()`, components will NOT share data!
+
+### 3. Directives & Components
+
+- **Directives**: Enhance standard HTML elements with behavior (e.g., `ngModel`). They **don't** have templates.
+- **Components**: Specialized directives **with** templates.
+
+### 4. Two-Way Data Binding
+
+Use `[(ngModel)]` to sync state between logic (TS) and UI (HTML).
+
+- **Requirement**: Import `FormsModule`.
+- **Note**: With Signals, use `[(ngModel)]="mySignal"`, **not** `mySignal()`.
+
+---
+
 _Advanced Documentation designed for Senior Growth._

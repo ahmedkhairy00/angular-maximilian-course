@@ -11,6 +11,17 @@
       </li>
     }
   </ul>
+
+  <!-- Tasks  -->
+  <!-- Make it dashboard section appear all tasks count and userTask count -->
+  <section class="task1 m-auto text-center flex gap-4 flex-col text-white">
+    <button class="bg-orange-700 !px-[10px] !py-[30px] border rounded">
+      Tasks Count : {{ tasksCount() }}
+    </button>
+    <button class="bg-orange-700 !px-[10px] !py-[30px] border rounded">
+      {{ getSelecteUserName(selectedUser?.id || '') }} Tasks Count : {{ userTasksCount() }}
+    </button>
+  </section>
   <div class="w-full !p-[20px] text-center">
     @if (selectedUser) {
       <app-user-tasks [user]="selectedUser"></app-user-tasks>

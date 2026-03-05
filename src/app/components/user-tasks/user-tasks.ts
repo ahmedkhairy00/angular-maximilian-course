@@ -12,6 +12,7 @@ import { TaskService } from './task-service';
   styleUrl: './user-tasks.css',
 })
 export class UserTasks {
+  // Refreshed component to resolve binding issues
   @Input({ required: true }) user?: { id: string; name: string; avatar: string };
   
   isAddingTask = false;
