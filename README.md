@@ -1,5 +1,5 @@
 > [!IMPORTANT]
-> **Critical Note for AI Assistants**: Never remove or replace old explanations in this file. Always append new data, steps, and pedagogical questions to support the existing content. Preserve the "Senior to Junior" teaching structure.
+> **Critical Note for AI Assistants**: Never remove or replace old explanations in this file. Always append new data, steps, and pedagogical questions to support the existing content. Preserve the "Senior to Junior" teaching structure. Additionally, ensure every explanation includes a code example, even within the step-by-step guides. After documenting, delete pedagogical comments from source files ONLY after pushing the documentation to GitHub to ensure it is permanently saved.
 
 # Angular Mastery: Senior Architect's Handbook 🚀
 
@@ -14,8 +14,6 @@ This repository is more than just a course tracker; it's a blueprint for buildin
 ## 🗺️ Part 1 Roadmap: The Reactive Core
 
 In this first phase, we focus on mastering the "Reactive Flow." A senior developer doesn't just make things work; they make them **efficient**, **predictable**, and **modular**.
-
----
 
 ---
 
@@ -114,9 +112,9 @@ export class UserComponent {
 ### 💡 How to use it (Steps)
 
 1.  **Generate**: Use `ng generate component my-component` to create a new one.
-2.  **Define Logic**: Add properties and methods to the `.ts` class.
-3.  **Create View**: Design the UI in the `.html` file.
-4.  **Register**: If not standalone, add to a module's `declarations`. If standalone, add to the `imports` of the component that uses it.
+2.  **Define Logic**: Add properties to the `.ts` class (e.g., `title = 'My App';`).
+3.  **Create View**: Design the UI in the `.html` file (e.g., `<h1>{{ title }}</h1>`).
+4.  **Register**: If not standalone, add to a module's `declarations`. If standalone, add to the `imports` of the component that uses it (e.g., `imports: [MyComponent]`).
 
 ### 🧠 Interview & Mind-Working Questions
 
@@ -131,7 +129,6 @@ A: It acts as a custom HTML tag (e.g., `<app-user>`) so we can place the compone
 ## 🔄 Data Binding & Interaction
 
 ![Data Binding Flow](public/images/data-binding.png)
-![Junior Data Flow](public/images/data_flow_junior.png)
 
 Angular provides powerful ways to sync data between your logic and the UI:
 
@@ -185,10 +182,10 @@ export class AppComponent {
 
 ### 💡 How to use Data Binding (Steps)
 
-1.  **Interpolation**: Use `{{ property }}` in HTML to show simple text.
-2.  **Property Binding**: Use `[attribute]="property"` to control HTML attributes (like `src` or `disabled`).
-3.  **Event Binding**: Use `(event)="method()"` to trigger logic when a user interacts.
-4.  **Getters**: Define `get myValue() { ... }` in TS to return a dynamic result, then use `{{ myValue }}` in HTML.
+1.  **Interpolation**: Use `{{ property }}` in HTML (e.g., `<span>{{ username }}</span>`).
+2.  **Property Binding**: Use `[attribute]="property"` in HTML (e.g., `<img [src]="userIcon" />`).
+3.  **Event Binding**: Use `(event)="method()"` in HTML (e.g., `<button (click)="save()">Save</button>`).
+4.  **Getters**: Define `get myValue() { ... }` in TS and use `{{ myValue }}` in HTML.
 
 ### 🧠 Interview & Mind-Working Questions
 
@@ -240,10 +237,10 @@ const upperName = computed(() => userName().toUpperCase());
 
 ### 💡 How to use Signals (Steps)
 
-1.  **Initialize**: Use `signal(initialValue)` for mutable state.
-2.  **Read**: Call the signal as a function: `mySignal()`.
-3.  **Update**: Use `.set(newValue)` for direct changes or `.update(prev => ...)` for changes based on the old value.
-4.  **Derive**: Use `computed(() => ...)` to create a reactive, read-only value from other signals.
+1.  **Initialize**: Use `signal(initialValue)` (e.g., `count = signal(0);`).
+2.  **Read**: Call as a function: `mySignal()` (e.g., `console.log(this.count());`).
+3.  **Update**: Use `.set(newValue)` or `.update(prev => ...)` (e.g., `this.count.set(5);`).
+4.  **Derive**: Use `computed(() => ...)` (e.g., `double = computed(() => this.count() * 2);`).
 
 ### 🧠 Interview & Mind-Working Questions
 
@@ -317,9 +314,9 @@ _Data flows from Parent ➡️ Child_
 
 ### 💡 How to use Component Inputs (Steps)
 
-1.  **Declare**: In the Child Component, use `@Input() property!` or `property = input.required<type>()`.
-2.  **Bind**: In the Parent Template, use `[property]="codeVariable"`.
-3.  **Use**: In the Child Logic, access it as a normal variable (or signal).
+1.  **Declare**: In the Child Component, use `@Input() property!` or `property = input.required<string>()`.
+2.  **Bind**: In the Parent Template, use `[property]="codeVariable"` (e.g., `<app-child [name]="user.name" />`).
+3.  **Use**: In the Child Logic, access it as a normal variable (or signal: `this.property()`).
 
 ### 🧠 Interview & Mind-Working Questions
 
@@ -389,8 +386,8 @@ _Events flow from Child ➡️ Parent_
 ### 💡 How to use Component Outputs (Steps)
 
 1.  **Create**: In the Child, use `@Output() myEvent = new EventEmitter()` or `myEvent = output()`.
-2.  **Emit**: Trigger `this.myEvent.emit(data)` inside a method (like `onButtonClick`).
-3.  **Listen**: In the Parent Template, use `(myEvent)="handleMethod($event)"`.
+2.  **Emit**: Trigger `this.myEvent.emit(data)` (e.g., `this.select.emit(userId)`).
+3.  **Listen**: In the Parent Template, use `(myEvent)="handleMethod($event)"` (e.g., `<app-child (select)="onUserSelect($event)" />`).
 
 ### 🧠 Interview & Mind-Working Questions
 
@@ -402,15 +399,7 @@ A: The Child (Visitor) presses a button. The Parent (Homeowner) hears the ring a
 
 ---
 
-### 🔄 Summary: How Data Moves
-
-| Feature    | Direction       | Symbol | Real-life Example                   |
-| :--------- | :-------------- | :----- | :---------------------------------- |
-| **Input**  | Parent ➡️ Child | `[ ]`  | Postman giving you mail 📬          |
-| **Output** | Child ➡️ Parent | `( )`  | Pressing a doorbell to say "Hi!" 🔔 |
-
-![Data Flow Diagram](public/images/output-flow.png)
-_Inputs go IN [ ], Outputs go OUT ( )_
+---
 
 ---
 
@@ -426,14 +415,13 @@ Sometimes we need to change the data before showing it (like adding a file path 
 **Why `computed()` is better?**
 It only runs when its dependencies (the signals inside it) change. A getter runs much more often, which can slow down huge apps! 🐢 -> 🚀
 
-![Input Data Flow](public/images/input-flow.png)
 _Data flows from the Parent into the Child "Mailbox"_
 
 ---
 
 ---
 
-## 🛠️ Senior Deep Dive: Code Lessons from Part 1
+## 🛠️ Senior Implementation Guide: Master Lessons
 
 This section captures the "Senior Notes" embedded throughout our source code, explaining the _why_ behind the _how_.
 
@@ -446,7 +434,6 @@ This section captures the "Senior Notes" embedded throughout our source code, ex
 
 Used to synchronize data between the logic (TypeScript) and the UI (HTML) in real-time.
 
-![ngModel Mirror](public/images/architecture.png)
 _Analogy: A Mirror! Whatever changes in the code reflects in the UI, and vice versa._
 
 - **Requirement**: Must import `FormsModule` from `@angular/forms`.
@@ -463,7 +450,6 @@ _Analogy: A Mirror! Whatever changes in the code reflects in the UI, and vice ve
 
 A senior developer centralizes data logic into **Services** to ensure consistency.
 
-![Dependency Injection](public/images/architecture.png)
 _Analogy: A Central Water Tower (Service) providing the same water to all houses (Components)._
 
 - **Dependency Injection (DI)**: A pattern where a service is "injected" into a component rather than created manually.
@@ -477,7 +463,6 @@ _Analogy: A Central Water Tower (Service) providing the same water to all houses
 
 LocalStorage allows us to save data in the user's browser so it doesn't disappear on refresh.
 
-![LocalStorage Storage](public/images/architecture.png)
 _Analogy: A Treasure Chest in the browser that survives a voyage._
 
 - **Senior Note**: We convert our tasks array into a string using `JSON.stringify` to save it, and `JSON.parse` to retrieve it.
@@ -530,8 +515,8 @@ if (savedTasks) {
 ### 💡 How to use Services (Steps)
 
 1.  **Generate**: Use `ng generate service my-service`.
-2.  **Define State**: Use `signal` to store data.
-3.  **Create Methods**: Add logic to modify the state (e.g., `addTask`, `removeTask`).
+2.  **Define State**: Use `signal` to store data (e.g., `tasks = signal([]);`).
+3.  **Create Methods**: Add logic: `addTask(t) { this.tasks.update(p => [...p, t]); }`.
 4.  **Inject**: Use `private myService = inject(MyService)` in your component.
 
 ### 🧠 Interview & Mind-Working Questions
@@ -585,9 +570,9 @@ According to [Angular Common API](https://angular.dev/api/common/isPlatformBrows
 
 **Step-by-Step Implementation:**
 
-1.  **Inject PLATFORM_ID**: This tells Angular which platform is currently running the code.
-2.  **Import isPlatformBrowser**: A utility function from `@angular/common`.
-3.  **The Guard**: Wrap your browser-only code in an `if` statement.
+1.  **Inject PLATFORM_ID**: In constructor or via `inject(PLATFORM_ID)`.
+2.  **Import isPlatformBrowser**: From `@angular/common`.
+3.  **The Guard**: Wrap code: `if (isPlatformBrowser(this.platformId)) { ... }`.
 
 ```typescript
 import { inject, PLATFORM_ID } from '@angular/core';
@@ -654,10 +639,10 @@ Because we use **Two-Way Binding**, the HTML `<input>` automatically shows whate
 
 ### 💡 How to populate forms for Edit (Steps)
 
-1.  **Input**: Receive `taskData` from the parent.
-2.  **Lifecycle**: Use `ngOnChanges` to detect when the data arrives.
-3.  **Assign**: Set local variables (like `enteredTitle`) to equal the data from the input.
-4.  **Bind**: Ensure the variables are connected to the HTML via `[(ngModel)]`.
+1.  **Input**: Receive data (e.g., `@Input() taskData!`).
+2.  **Lifecycle**: Use `ngOnChanges` to update local variables when the Input changes.
+3.  **Assign**: `this.localTitle = this.taskData.title`.
+4.  **Bind**: Use `[(ngModel)]="localTitle"` in the HTML template.
 
 ### 🧠 Interview & Mind-Working Questions
 
@@ -758,50 +743,7 @@ this.tasks.update((tasks) => tasks.filter((task) => task.id !== targetId));
 
 ---
 
-## 🎓 Study Notes: Services & Dependency Injection (DI)
-
-These notes were extracted from component logic to provide a clear architectural overview of how Angular handles data and dependencies.
-
-### 1. Creating a Service
-
-Services are centralized classes for data logic. Use the CLI to generate them:
-`ng generate service <name>`
-
-### 2. Dependency Injection (DI) Patterns
-
-DI is a design pattern used to inject services into components. There are two modern ways:
-
-#### A. Constructor Injection
-
-```typescript
-constructor(private taskService: TaskService) {
-  // Access data immediately
-  this.tasks = this.taskService.getUserTasks(this.userId);
-}
-```
-
-#### B. The `inject()` Function (Modern Clean Code)
-
-```typescript
-import { inject } from '@angular/core';
-private taskService = inject(TaskService);
-```
-
-> [!IMPORTANT]
-> **Singleton vs. Scoped Service**
-> Using `providedIn: 'root'` ensures the service is a **Singleton** (shared instance). If you create a new instance manually with `new TaskService()`, components will NOT share data!
-
-### 3. Directives & Components
-
-- **Directives**: Enhance standard HTML elements with behavior (e.g., `ngModel`). They **don't** have templates.
-- **Components**: Specialized directives **with** templates.
-
-### 4. Two-Way Data Binding
-
-Use `[(ngModel)]` to sync state between logic (TS) and UI (HTML).
-
-- **Requirement**: Import `FormsModule`.
-- **Note**: With Signals, use `[(ngModel)]="mySignal"`, **not** `mySignal()`.
+---
 
 ---
 
@@ -819,20 +761,27 @@ In Angular, **NgModules** are like "containers" or "boxes" that organize your co
 
 Think of a Module as a **Team Office**:
 
-1.  **`declarations` (The Team)**: Every component, directive, or pipe that "lives" in this module must be listed here.
+1.  **`declarations` (The Team)**: `declarations: [UserComponent]`
     - _Senior Note_: Components here must have `standalone: false`.
-2.  **`imports` (The Tools)**: Other modules or standalone components that your team needs to do their job (e.g., `FormsModule`).
-3.  **`exports` (The Storefront)**: What you want other modules to see. If it's not exported, it's private to this module! 🔒
-4.  **`providers` (The Services)**: Centralized data logic (Services) available to the team.
-5.  **`bootstrap` (The Starting Line)**: Only used in the main `AppModule`. It tells Angular which component to start with (usually `App`).
+2.  **`imports` (The Tools)**: `imports: [CommonModule, FormsModule]`
+3.  **`exports` (The Storefront)**: `exports: [UserComponent]` (What others can see).
+4.  **`providers` (The Services)**: `providers: [TaskService]` (Data logic).
+5.  **`bootstrap` (The Starting Line)**: `bootstrap: [AppComponent]` (Only used in `AppModule`).
 
 ---
 
-### 🚀 Benefits of Using Modules
+### 🚀 The Full Module Code Example
 
-- **Division of Labor**: Different developers can work on different modules (e.g., `AuthModule`, `DashboardModule`).
-- **Lazy Loading**: You can tell Angular: _"Don't load the Admin code until the user actually clicks the Admin link!"_ This makes the app much faster. 🏎️
-- **Organization**: Keeps your `AppModule` from becoming a "Giant Spaghetti Monster." 🍝
+```typescript
+@NgModule({
+  declarations: [HeaderComponent, UserComponent], // Components for the team
+  imports: [CommonModule, FormsModule], // Tools needed
+  exports: [HeaderComponent], // Publicly visible components
+  providers: [TaskService], // Services
+  bootstrap: [AppComponent], // Application starting point
+})
+export class AppModule {}
+```
 
 ---
 
@@ -841,9 +790,9 @@ Think of a Module as a **Team Office**:
 Based on the `shared.module.ts` in this project:
 
 1.  **Create**: Generate a module: `ng generate module Shared`.
-2.  **Declare**: Add reusable components (like `UserTasks`, `User`) to `declarations`.
-3.  **Export**: Add those same components to `exports` so other modules can use them.
-4.  **Import**: In your `AppModule`, simply add `SharedModule` to the `imports` array.
+2.  **Declare**: Add reusable components to `declarations: [NewTask, UserTasks, User]`.
+3.  **Export**: Add those same components to `exports: [UserTasks, User]`.
+4.  **Import**: In your `AppModule`, add `SharedModule` to the `imports: [SharedModule]` array.
 
 ---
 
