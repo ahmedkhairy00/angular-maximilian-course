@@ -1,14 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { Header } from './components/header/header';
-import { User } from './components/user/user';
 import {DUMMY_USERS} from '../data/dummy-users'
 import { UserData } from './components/user/user.model';
-import { UserTasks } from './components/user-tasks/user-tasks';
 import { TaskService } from './components/user-tasks/task-service';
 
 @Component({
   selector: 'app-root',
-  imports: [Header, User, UserTasks],
+  standalone : false,
   templateUrl: './app.html',
   styleUrl: './app.css'
 })  

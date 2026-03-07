@@ -7,7 +7,7 @@ import {  UserData } from './user.model';
 
 @Component({  
   selector: 'app-user',
-  standalone: true,
+  standalone: false,
   templateUrl: './user.html',
   styleUrl: './user.css'
 })

@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **Critical Note for AI Assistants**: Never remove or replace old explanations in this file. Always append new data, steps, and pedagogical questions to support the existing content. Preserve the "Senior to Junior" teaching structure.
+
 # Angular Mastery: Senior Architect's Handbook 🚀
 
 > **Part 1: Foundations & Reactive Architecture**
@@ -92,11 +95,27 @@ export class UserComponent {
 }
 ```
 
+### 💡 How to use it (Steps)
+
+1.  **Generate**: Use `ng generate component my-component` to create a new one.
+2.  **Define Logic**: Add properties and methods to the `.ts` class.
+3.  **Create View**: Design the UI in the `.html` file.
+4.  **Register**: If not standalone, add to a module's `declarations`. If standalone, add to the `imports` of the component that uses it.
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: What are the 4 main parts of a component?**
+A: Template (HTML), Styles (CSS), Class (TS Logic), and Metadata (@Component decorator).
+
+**Q: Why do we use a selector?**
+A: It acts as a custom HTML tag (e.g., `<app-user>`) so we can place the component anywhere in our app.
+
 ---
 
 ## 🔄 Data Binding & Interaction
 
 ![Data Binding Flow](public/images/data-binding.png)
+![Junior Data Flow](public/images/data_flow_junior.png)
 
 Angular provides powerful ways to sync data between your logic and the UI:
 
@@ -148,6 +167,21 @@ export class AppComponent {
 <h2>{{ userCountDisplay }}</h2>
 ```
 
+### 💡 How to use Data Binding (Steps)
+
+1.  **Interpolation**: Use `{{ property }}` in HTML to show simple text.
+2.  **Property Binding**: Use `[attribute]="property"` to control HTML attributes (like `src` or `disabled`).
+3.  **Event Binding**: Use `(event)="method()"` to trigger logic when a user interacts.
+4.  **Getters**: Define `get myValue() { ... }` in TS to return a dynamic result, then use `{{ myValue }}` in HTML.
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: Difference between `{{ }}` and `[ ]`?**
+A: `{{ }}` is for injecting string values into text; `[ ]` is for binding data directly to property values of elements.
+
+**Q: Why do we use parentheses in `(click)`?**
+A: Parentheses represent **Output** (events moving from the UI to the Code).
+
 ---
 
 ## ⚡ Angular Signals & Change Detection
@@ -188,6 +222,23 @@ userName.set('Mohamed');
 const upperName = computed(() => userName().toUpperCase());
 ```
 
+### 💡 How to use Signals (Steps)
+
+1.  **Initialize**: Use `signal(initialValue)` for mutable state.
+2.  **Read**: Call the signal as a function: `mySignal()`.
+3.  **Update**: Use `.set(newValue)` for direct changes or `.update(prev => ...)` for changes based on the old value.
+4.  **Derive**: Use `computed(() => ...)` to create a reactive, read-only value from other signals.
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: Why use `computed()` instead of a normal getter?**
+A: Performance! `computed()` is lazily evaluated and memoized (it only re-runs if a signal inside it changes).
+
+**Q: What is a Signal?**
+A: A trackable data container that notifies Angular exactly when its value changes, allowing for targeted UI updates.
+
+````
+
 ---
 
 ### 📥 Receiving Data: Component Inputs (`@Input` & `input()`)
@@ -210,7 +261,7 @@ export class ChildComponent {
   @Input({ required: true }) name!: string;
   @Input() avatar: string = 'default.png'; // With default value
 }
-```
+````
 
 **How to pass data in the Parent Template:**
 
@@ -249,6 +300,20 @@ _Data flows from Parent ➡️ Child_
 > - **Zoneless Readiness**: Signal inputs are a key building block for removing Zone.js in the future, significantly boosting performance.
 > - **Computed Synergy**: You can derive state instantly using `computed(() => 'img/' + this.avatar())` without worrying about change detection cycles.
 > - **Read-Only by Design**: Signal inputs are read-only (`Signal<T>`), which enforces the "One-Way Data Flow" principle and prevents accidental state mutations within child components. 🛡️
+
+### 💡 How to use Component Inputs (Steps)
+
+1.  **Declare**: In the Child Component, use `@Input() property!` or `property = input.required<type>()`.
+2.  **Bind**: In the Parent Template, use `[property]="codeVariable"`.
+3.  **Use**: In the Child Logic, access it as a normal variable (or signal).
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: Why do we use `@Input({ required: true })`?**
+A: To ensure the app crashes immediately if a developer forgets to pass essential data, making debugging easier.
+
+**Q: What is the "Mailbox Analogy" for Inputs?**
+A: The Parent (Postman) drops data into the Child's (House) mailbox. The Child can't change the mail; it just receives it.
 
 ### 📢 Sending Data Back: Component Outputs (`@Output` & `output()`)
 
@@ -306,6 +371,20 @@ _Events flow from Child ➡️ Parent_
 > [!NOTE]
 > **Senior Architect's Insight: Output vs EventEmitter**
 > While the traditional `@Output()` decorator requires the `EventEmitter` class, the newer `output()` function is leaner and more intuitive. It’s not a Signal itself (it doesn't store a value), but it handles the "Bottom-to-Top" event flow with significantly less code and superior type safety.
+
+### 💡 How to use Component Outputs (Steps)
+
+1.  **Create**: In the Child, use `@Output() myEvent = new EventEmitter()` or `myEvent = output()`.
+2.  **Emit**: Trigger `this.myEvent.emit(data)` inside a method (like `onButtonClick`).
+3.  **Listen**: In the Parent Template, use `(myEvent)="handleMethod($event)"`.
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: What does `$event` represent?**
+A: It is the payload (data) emitted from the child component.
+
+**Q: What is the "Doorbell Analogy" for Outputs?**
+A: The Child (Visitor) presses a button. The Parent (Homeowner) hears the ring and decides how to react.
 
 ---
 
@@ -434,6 +513,23 @@ if (savedTasks) {
 }
 ```
 
+### 💡 How to use Services (Steps)
+
+1.  **Generate**: Use `ng generate service my-service`.
+2.  **Define State**: Use `signal` to store data.
+3.  **Create Methods**: Add logic to modify the state (e.g., `addTask`, `removeTask`).
+4.  **Inject**: Use `private myService = inject(MyService)` in your component.
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: Why use a Service instead of storing data in a Component?**
+A: Services are **Singletons**. If you store data in Component A and navigate away, that data is lost. If you store it in a Service, every component gets the exact same data!
+
+**Q: What is Dependency Injection (DI)?**
+A: It's a pattern where Angular "hands" instances of services to components, so the components don't have to create them manually.
+
+````
+
 ---
 
 ## 🏗️ Advanced Concepts (Roadmap)
@@ -495,7 +591,15 @@ export class MyService {
     }
   }
 }
-```
+````
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: Why does `localStorage` crash on the Server?**
+A: Because there is no browser window/storage in a Node.js server environment.
+
+**Q: What is SSR (Server-Side Rendering)?**
+A: It's when Angular generates the HTML on the server first to make the app load faster and improve SEO.
 
 ---
 
@@ -536,6 +640,18 @@ Because we use **Two-Way Binding**, the HTML `<input>` automatically shows whate
 <input [(ngModel)]="enteredTitle" name="title" />
 ```
 
+### 💡 How to populate forms for Edit (Steps)
+
+1.  **Input**: Receive `taskData` from the parent.
+2.  **Lifecycle**: Use `ngOnChanges` to detect when the data arrives.
+3.  **Assign**: Set local variables (like `enteredTitle`) to equal the data from the input.
+4.  **Bind**: Ensure the variables are connected to the HTML via `[(ngModel)]`.
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: Why use `ngOnChanges` instead of just `ngOnInit`?**
+A: Because `ngOnInit` only runs once. If the user clicks a different task to edit while the form is already open, we need `ngOnChanges` to update the fields!
+
 > [!TIP]
 > This pattern ensures that the form is always "synced". If the parent gives us a new task to edit, `ngOnChanges` fires, updates the variables, and the UI updates instantly! 🔄
 
@@ -559,9 +675,18 @@ A Senior Architect ensures that even if a user accidentally closes a form, their
     - **Step 3**: If found, `JSON.parse` it and assign the values to our form variables.
 
 3.  **Clearing on Success**: Once the user actually clicks "Submit" and the task is saved, we **delete** the draft so it doesn't pop up again.
+
     ```typescript
     localStorage.removeItem('draft_task_' + userId);
     ```
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: Why clear the draft on `onSubmit`?**
+A: Because the draft is no longer needed once the task is officially saved. Keeping it would cause the old data to reappear next time the form opens!
+
+**Q: Benefit of `JSON.stringify`?**
+A: `localStorage` can only store strings. We must convert our objects into strings to save them.
 
 > [!IMPORTANT]
 > **Why user-specific keys?**
@@ -665,6 +790,61 @@ Use `[(ngModel)]` to sync state between logic (TS) and UI (HTML).
 
 - **Requirement**: Import `FormsModule`.
 - **Note**: With Signals, use `[(ngModel)]="mySignal"`, **not** `mySignal()`.
+
+---
+
+_Advanced Documentation designed for Senior Growth._
+
+---
+
+# Part 2: NgModules (The Modular Architecture) 🏗️
+
+In Angular, **NgModules** are like "containers" or "boxes" that organize your code. Even though modern Angular uses **Standalone Components**, understanding Modules is critical for legacy projects and large-scale architecture.
+
+![Modules Architecture](public/images/modules_architecture.png)
+
+### 🧩 The 5 Divisions of a Module (`@NgModule`)
+
+Think of a Module as a **Team Office**:
+
+1.  **`declarations` (The Team)**: Every component, directive, or pipe that "lives" in this module must be listed here.
+    - _Senior Note_: Components here must have `standalone: false`.
+2.  **`imports` (The Tools)**: Other modules or standalone components that your team needs to do their job (e.g., `FormsModule`).
+3.  **`exports` (The Storefront)**: What you want other modules to see. If it's not exported, it's private to this module! 🔒
+4.  **`providers` (The Services)**: Centralized data logic (Services) available to the team.
+5.  **`bootstrap` (The Starting Line)**: Only used in the main `AppModule`. It tells Angular which component to start with (usually `App`).
+
+---
+
+### 🚀 Benefits of Using Modules
+
+- **Division of Labor**: Different developers can work on different modules (e.g., `AuthModule`, `DashboardModule`).
+- **Lazy Loading**: You can tell Angular: _"Don't load the Admin code until the user actually clicks the Admin link!"_ This makes the app much faster. 🏎️
+- **Organization**: Keeps your `AppModule` from becoming a "Giant Spaghetti Monster." 🍝
+
+---
+
+### 💡 How to use a Shared Module (Steps)
+
+Based on the `shared.module.ts` in this project:
+
+1.  **Create**: Generate a module: `ng generate module Shared`.
+2.  **Declare**: Add reusable components (like `UserTasks`, `User`) to `declarations`.
+3.  **Export**: Add those same components to `exports` so other modules can use them.
+4.  **Import**: In your `AppModule`, simply add `SharedModule` to the `imports` array.
+
+---
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: Difference between `declarations` and `imports`?**
+A: `declarations` is for your **own** files (components you wrote). `imports` is for **external** modules or standalone components.
+
+**Q: Why use `exports`?**
+A: By default, components in a module are "hidden." You must export them so they can be used as HTML tags in other components' templates.
+
+**Q: Can a component be in two modules?**
+A: **No!** A component can only be declared in **one** module. If you need it in two places, move it to a Shared Module and import that module in both places.
 
 ---
 

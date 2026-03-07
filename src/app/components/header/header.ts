@@ -2,9 +2,9 @@ import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-header',
-  imports: [],
   templateUrl: './header.html',
   styleUrls: ['./header.css'],
+  standalone : false,
 })
 export class Header {
   title  = "EasyTask";

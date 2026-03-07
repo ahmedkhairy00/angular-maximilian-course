@@ -1,13 +1,11 @@
 import { Component, Input } from '@angular/core';
 import { newTaskData, Task } from './task.model';
-import { NewTask } from './new-task/new-task';
-import {DatePipe} from '@angular/common';
+
 import { TaskService } from './task-service';
 
 @Component({
   selector: 'app-user-tasks',
-  imports:[DatePipe,NewTask],
-  standalone: true,
+  standalone: false,
   templateUrl: './user-tasks.html',
   styleUrl: './user-tasks.css',
 })
