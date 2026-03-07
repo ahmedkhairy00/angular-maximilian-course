@@ -42,7 +42,23 @@ Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app w
 ## 📚 Course Progress & Learning Path
 
 - [x] **Introduction to Angular**: A TypeScript-based framework by Google for building scalable Single-Page Applications (SPAs).
+  ```typescript
+  // Example of a basic Angular Component structure
+  @Component({
+    selector: 'app-root',
+    template: `<h1>Hello {{ name }}</h1>`,
+  })
+  export class AppComponent {
+    name = 'Angular';
+  }
+  ```
 - [x] **Angular Architecture**: Organizing apps using components, templates, and services with a focus on modularity and dependency injection.
+  ```mermaid
+  graph TD
+    AppModule --> AppComponent
+    AppComponent --> UserComponent
+    AppComponent --> TaskService
+  ```
 
 ### 📁 Project Structure Deep Dive
 
@@ -199,7 +215,7 @@ Angular uses **Zone.js** by default to detect changes. However, **Signals** (int
 > A **Signal** is an object that stores a value (any type of value including nested objects).
 
 > [!NOTE]
-> A **Angular** Angular manages subscriptions to the signal to get notified about values changes
+> **Angular Reactivity**: Angular manages subscriptions to the signal to get notified about value changes.
 
 > [!NOTE]
 > A **Computed Signal** is a "read-only, derived state" that is computed from other signals.
@@ -237,8 +253,6 @@ A: Performance! `computed()` is lazily evaluated and memoized (it only re-runs i
 **Q: What is a Signal?**
 A: A trackable data container that notifies Angular exactly when its value changes, allowing for targeted UI updates.
 
-````
-
 ---
 
 ### 📥 Receiving Data: Component Inputs (`@Input` & `input()`)
@@ -261,7 +275,7 @@ export class ChildComponent {
   @Input({ required: true }) name!: string;
   @Input() avatar: string = 'default.png'; // With default value
 }
-````
+```
 
 **How to pass data in the Parent Template:**
 
@@ -528,8 +542,6 @@ A: Services are **Singletons**. If you store data in Component A and navigate aw
 **Q: What is Dependency Injection (DI)?**
 A: It's a pattern where Angular "hands" instances of services to components, so the components don't have to create them manually.
 
-````
-
 ---
 
 ## 🏗️ Advanced Concepts (Roadmap)
@@ -591,7 +603,7 @@ export class MyService {
     }
   }
 }
-````
+```
 
 ### 🧠 Interview & Mind-Working Questions
 
