@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -15,6 +15,11 @@ export class UserInputs {
   expectedReturn = signal('');
   duration = signal('');
 
+  isSubmited = output<boolean>();
+
+  submitedForm(){
+    this.isSubmited.emit(true);
+  }
   onSubmit(){
     console.log(this.initialInvestment(), this.annualInvestment(), this.expectedReturn(), this.duration());
   }

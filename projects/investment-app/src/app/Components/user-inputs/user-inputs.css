@@ -43,3 +43,6 @@ button{
   width: 100%;
   text-transform: uppercase;
 }
+button:hover{
+    background-color: #eee;
+}

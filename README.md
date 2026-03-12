@@ -314,9 +314,36 @@ _Data flows from Parent ➡️ Child_
 
 ### 💡 How to use Component Inputs (Steps)
 
-1.  **Declare**: In the Child Component, use `@Input() property!` or `property = input.required<string>()`.
-2.  **Bind**: In the Parent Template, use `[property]="codeVariable"` (e.g., `<app-child [name]="user.name" />`).
-3.  **Use**: In the Child Logic, access it as a normal variable (or signal: `this.property()`).
+#### **Step 1: In the Child Component (Declare)**
+
+You must tell Angular that this component is ready to receive data.
+
+- **The Modern Signal Way (Recommended)**:
+  ```typescript
+  // Required input
+  userId = input.required<string>();
+  // Optional with default
+  theme = input('light');
+  ```
+- **The Traditional Decorator Way**:
+  ```typescript
+  @Input({ required: true }) userId!: string;
+  @Input() theme: string = 'light';
+  ```
+
+#### **Step 2: In the Parent Template (Bind)**
+
+The parent "pushes" the data into the child using square brackets `[ ]`.
+
+```html
+<!-- We pass the 'currentId' variable into the child's 'userId' input -->
+<app-child [userId]="currentId" [theme]="'dark'" />
+```
+
+#### **Step 3: In the Child Logic (Access)**
+
+- **Signal**: Call it like a function: `this.userId()`.
+- **Decorator**: Use it like a normal variable: `this.userId`.
 
 ### 🧠 Interview & Mind-Working Questions
 
@@ -385,9 +412,52 @@ _Events flow from Child ➡️ Parent_
 
 ### 💡 How to use Component Outputs (Steps)
 
-1.  **Create**: In the Child, use `@Output() myEvent = new EventEmitter()` or `myEvent = output()`.
-2.  **Emit**: Trigger `this.myEvent.emit(data)` (e.g., `this.select.emit(userId)`).
-3.  **Listen**: In the Parent Template, use `(myEvent)="handleMethod($event)"` (e.g., `<app-child (select)="onUserSelect($event)" />`).
+#### **Step 1: In the Child Component (Create & Emit)**
+
+You create a custom event and decide when to "fire" it.
+
+- **The Modern Signal Way (Recommended)**:
+
+  ```typescript
+  // 1. Create the output
+  select = output<string>();
+
+  // 2. Emit the value in a method
+  onUserClick() {
+    this.select.emit('some-user-id');
+  }
+  ```
+
+- **The Traditional Decorator Way**:
+
+  ```typescript
+  // 1. Create with EventEmitter
+  @Output() select = new EventEmitter<string>();
+
+  onUserClick() {
+    this.select.emit('some-user-id');
+  }
+  ```
+
+#### **Step 2: In the Parent Template (Listen)**
+
+The parent listens for the event using parentheses `( )`.
+
+```html
+<!-- We listen for 'select' and call 'handleSelect' in our TS file -->
+<app-child (select)="onHandleSelect($event)" />
+```
+
+#### **Step 3: In the Parent Logic (Handle)**
+
+Receive the emitted data via the function parameters.
+
+```typescript
+onHandleSelect(id: string) {
+  console.log('Child emitted:', id);
+  // Do logic with the data
+}
+```
 
 ### 🧠 Interview & Mind-Working Questions
 
