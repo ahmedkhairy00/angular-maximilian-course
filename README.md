@@ -399,7 +399,15 @@ A: The Child (Visitor) presses a button. The Parent (Homeowner) hears the ring a
 
 ---
 
----
+### 🔄 Summary: How Data Moves
+
+| Feature    | Direction       | Symbol | Real-life Example                   |
+| :--------- | :-------------- | :----- | :---------------------------------- |
+| **Input**  | Parent ➡️ Child | `[ ]`  | Postman giving you mail 📬          |
+| **Output** | Child ➡️ Parent | `( )`  | Pressing a doorbell to say "Hi!" 🔔 |
+
+![Data Flow Diagram](public/images/output-flow.png)
+_Inputs go IN [ ], Outputs go OUT ( )_
 
 ---
 
@@ -430,21 +438,48 @@ This section captures the "Senior Notes" embedded throughout our source code, ex
 - **Directives**: Enhance existing elements by adding behavior (like `ngModel`). They **don't** have their own template.
 - **Components**: Are actually specialized directives that **do** have their own template.
 
-### 2. Two-Way Binding with `[(ngModel)]` 🔄
+### 2. Template-Driven Forms: `ngModel` & `ngSubmit` 📝
 
-Used to synchronize data between the logic (TypeScript) and the UI (HTML) in real-time.
+In Angular, Template-Driven forms are the quickest way to capture user input. We use `[(ngModel)]` for data and `(ngSubmit)` for logic.
 
-_Analogy: A Mirror! Whatever changes in the code reflects in the UI, and vice versa._
+#### 🛡️ The Power of `FormsModule`
 
-- **Requirement**: Must import `FormsModule` from `@angular/forms`.
-- **Behavior**: Automatically prevents the default browser behavior of sending a form request to the server and redirecting (SPA behavior).
-- **Signal Two-Way Binding**: You can use Signals with `[(ngModel)]` just like normal properties.
-  ```html
-  [(ngModel)]="title"
-  <!-- Correct! -->
-  [(ngModel)]="title()"
-  <!-- ERROR! Don't use parentheses here -->
-  ```
+To use forms, you **must** import `FormsModule` from `@angular/forms`. This module is like a "Toolkit" that gives Angular the power to understand `<form>`, `<input>`, and binding directives.
+
+#### 🚀 Automatic `preventDefault()`
+
+In standard JavaScript, you have to write `event.preventDefault()` to stop the page from reloading when horizontal form is submitted.
+**Angular is smarter!** When you use the `(ngSubmit)` directive on a `<form>`, Angular automatically calls `preventDefault()` for you. Your app stays fast and never reloads.
+
+_Analogy: A Two-Way Mirror! Whatever you type reflects in the code, and whatever the code changes reflects in the UI._
+
+### 💡 How to use Angular Forms (Steps)
+
+1.  **Import**: Add `FormsModule` to your component or module imports.
+    ```typescript
+    imports: [FormsModule];
+    ```
+2.  **Bind**: Use `[(ngModel)]` on your inputs. **Crucial**: You must also add a `name` attribute!
+    ```html
+    <input [(ngModel)]="userName" name="username" />
+    ```
+3.  **Submit**: Use `(ngSubmit)` on the `<form>` tag.
+    ```html
+    <form (ngSubmit)="onSave()">
+      <button>Submit</button>
+    </form>
+    ```
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: Why does the page not reload when clicking 'Submit' in an Angular Form?**
+A: Because the `(ngSubmit)` directive automatically handles `preventDefault()` under the hood, keeping the application inside its Single-Page Application (SPA) flow.
+
+**Q: Why is the `name` attribute mandatory with `ngModel`?**
+A: Angular uses the `name` attribute to register the input control within the internal Form object. Without it, Angular doesn't know which data belongs to which field!
+
+**Q: What happens if you forget to import `FormsModule`?**
+A: You will get a "Template Parse Error" saying that `ngModel` is not a known property of `input`.
 
 ### 3. State Management & Service Architecture 🏗️
 
@@ -741,12 +776,6 @@ this.tasks.update((tasks) => tasks.filter((task) => task.id !== targetId));
 
 ---
 
----
-
----
-
----
-
 _Advanced Documentation designed for Senior Growth._
 
 ---
@@ -761,12 +790,17 @@ In Angular, **NgModules** are like "containers" or "boxes" that organize your co
 
 Think of a Module as a **Team Office**:
 
-1.  **`declarations` (The Team)**: `declarations: [UserComponent]`
+1.  **`declarations` (The Team)**: List your internal components, directives, and pipes here.
+    - _Example_: `declarations: [UserComponent, HeaderComponent]`
     - _Senior Note_: Components here must have `standalone: false`.
-2.  **`imports` (The Tools)**: `imports: [CommonModule, FormsModule]`
-3.  **`exports` (The Storefront)**: `exports: [UserComponent]` (What others can see).
-4.  **`providers` (The Services)**: `providers: [TaskService]` (Data logic).
-5.  **`bootstrap` (The Starting Line)**: `bootstrap: [AppComponent]` (Only used in `AppModule`).
+2.  **`imports` (The Tools)**: Other modules or standalone components your module needs.
+    - _Example_: `imports: [CommonModule, FormsModule]`
+3.  **`exports` (The Storefront)**: What you want other modules to see and use.
+    - _Example_: `exports: [UserComponent]`
+4.  **`providers` (The Services)**: Data logic (Services) available to this module.
+    - _Example_: `providers: [TaskService]`
+5.  **`bootstrap` (The Starting Line)**: Only used in the root `AppModule` to tell Angular where to start.
+    - _Example_: `bootstrap: [AppComponent]`
 
 ---
 

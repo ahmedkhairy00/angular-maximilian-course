@@ -28,6 +28,12 @@
     },
     {
       "path": "./tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/investment-app/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/investment-app/tsconfig.spec.json"
     }
   ]
 }
