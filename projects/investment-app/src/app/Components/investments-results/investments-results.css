@@ -1,0 +1,27 @@
+#result{
+    margin-top: 2rem;
+    text-align: center;
+}
+
+#result table{
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#result th{
+    padding: 0.5rem;
+    font-weight: 400;
+    color: #2F8F5B;
+}
+
+#result td{
+    padding: 0.5rem;
+    text-align: right;
+}
+
+
+#result tbody tr:hover{
+    background-color: #333;
+}
+
+

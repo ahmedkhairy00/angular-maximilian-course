@@ -1,2 +1,10 @@
 <app-header></app-header>
-<app-user-inputs (isSubmited)="submitedForm()"></app-user-inputs>
+<app-user-inputs (isSubmited)="formSubmited($event)"></app-user-inputs>
+
+@if (isSubmited()) {
+  <div class="message">
+    <h2>Pleas enter some values and press "Calcluate"</h2>
+  </div>
+} @else {
+  <app-investments-results></app-investments-results>
+}

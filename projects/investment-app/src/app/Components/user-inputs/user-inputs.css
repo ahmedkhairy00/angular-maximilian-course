@@ -1,6 +1,6 @@
 form{
   padding: 2rem;
-  background-color: rgb(97, 197, 97);
+  background-color: #2F8F5B;
   margin: 2rem;
 }
 
@@ -32,6 +32,8 @@ form{
   border-radius: 5px;
   border: #ccc 2px solid;
   outline: none;
+  color: #eee;
+
 }
 
 button{
