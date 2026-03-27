@@ -1006,4 +1006,51 @@ A: HTML inputs provide data as a `string` by default. Since we are doing math, w
 
 ---
 
+# 🔍 Debugging Angular Applications: A Professional Guide
+
+Debuging is one of the most important skills for a developer. In Angular, we have specialized tools to find and fix errors quickly.
+
+## 1. Tracking Compilation Errors 🚨
+
+When you make a mistake in your code (like a typo or a missing import), the Angular Compiler will show an error in your terminal or browser.
+
+![Compiler Error](public/images/compiler-error.png)
+
+-   **The Benefit**: Angular tells you exactly which **Component**, which **File**, and which **Line Number** has the problem.
+-   **Why it's important**: You don't have to guess where the bug is. Just look at the error message and jump to the red-underlined line!
+
+## 2. Using the Browser Debugger (Sources Tab) 🛠️
+
+For **Logical Errors** (where the code runs but doesn't do what you want), we use the browser's "Sources" tab.
+
+![Browser Debugger](public/images/browser-debugger.png)
+
+### 💡 How to Debug Logic (Steps):
+1.  **Open DevTools**: Press `F12` and go to the **Sources** tab.
+2.  **Set a Breakpoint**: Click on a line number where you want the code to "Pause."
+3.  **Inspect Values**: Hover over variables or look at the **Watch** window to see the actual data being sent.
+4.  **Step-by-Step**: Use the "Next Line" button to observe how the data changes as it moves through your methods.
+
+## 3. Angular DevTools Extension 🛡️
+
+This is a specialized browser extension for Angular developers!
+
+![Angular DevTools](public/images/angular-devtools.png)
+
+-   **Component Tree**: See how your components relate to each other.
+-   **Signal Observer**: Watch your **Signals** change in real-time. If you change a value in the extension, you can see if the UI reacts correctly.
+-   **State Inspection**: Check the "Properties" of any component without adding `console.log` everywhere.
+
+---
+
+### 🧠 Interview & Mind-Working Questions
+
+**Q: How do you find a logical error if the app isn't crashing?**
+A: Use the browser's **Sources** tab to set a breakpoint and "Step through" the code to see exactly where the data goes wrong.
+
+**Q: Why is the Angular DevTools extension useful for Signals?**
+A: It allows you to observe the current value of a signal and even manually trigger changes to test reactivity without reloading the app.
+
+---
+
 _Advanced Documentation designed for Senior Growth._
