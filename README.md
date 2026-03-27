@@ -913,96 +913,79 @@ A: **No!** A component can only be declared in **one** module. If you need it in
 
 ---
 
-# Part 3: Project Study - Investment Calculator 📈
+# 📁 Projects Portfolio: Real-World Applications
 
-This project demonstrates a real-world application of **Service-Oriented Architecture** and **Signals** for reactive data handling.
-
-## 🏗️ Architecture Overview
-
-The app is divided into three main functional area:
-1.  **Header**: Branded visual entry point.
-2.  **UserInputs**: A form to capture investment parameters.
-3.  **InvestmentsResults**: A table displaying year-by-year projections.
-4.  **InvestmentService**: The "Brain" of the application.
-
-### ❓ The "WHY" Behind the Design
-
-#### **Why use a Service for Calculations?**
--   **Logic Decoupling**: The components (HTML/CSS) shouldn't care *how* a compound interest formula works. They only care about displaying the result.
--   **Centralized State**: By storing inputs in the `InvestmentService`, we ensure that if we add a second "Summary" component later, it will always show the same values as the "Results" table.
-
-#### **Why use Signals for Data?**
--   **Instant Reactivity**: When a user changes the "Initial Investment," the Service's signal updates. Any component listening to that signal (like the Results table) updates **zero-latency**.
--   **Fine-Grained Updates**: Angular only re-renders the specific part of the DOM that changed, making the app feel extremely professional and fast.
+This section catalogs the complete applications built during this course, demonstrating how individual Angular concepts come together to solve real business problems.
 
 ---
 
-## 💡 How we built it (Steps & Why)
+## 🚀 Project 1: Investment Calculator App
 
-### **Step 1: Create the Investment Service**
-We created a central "Brain" to hold the mathematical logic. **Why?** To keep calculations separate from UI logic.
+A professional tool for projecting financial growth, emphasizing **Signal-based state management** and **Service-oriented logic**.
+
+### 📈 Business Logic: The "How it Works" (Mathematics)
+
+Understanding the business logic is the first step before writing any code. The app calculates **Compound Interest** based on four user inputs:
+
+1.  **Initial Investment**: The starting amount of money.
+2.  **Annual Investment**: The amount added every year.
+3.  **Expected Return**: The annual interest rate percentage.
+4.  **Duration**: How many years the investment will grow.
+
+#### **The Mathematical Formula (Year-by-Year)**
+For every year in the duration, the app performs the following calculation:
+-   **Interest Earned**: `Current Value * (Expected Return / 100)`
+-   **New Value**: `Current Value + Interest Earned + Annual Investment`
+-   **Total Interest**: `Current Value - (Annual Investment * Year) - Initial Investment`
+-   **Total Invested**: `Initial Investment + (Annual Investment * Year)`
+
+---
+
+### 💻 Code Implementation Deep Dive
+
+We decentralized the logic to ensure the app is scalable and easy to test.
+
+#### **1. The Central "Brain": `investment.service.ts`**
+Instead of calculating inside a component, we use a service. **Why?** So any component in the app can access the results without recalculating them.
 
 ```typescript
 @Injectable({ providedIn: 'root' })
 export class InvestmentService {
-  // Signals for state
-  initialInvestment = signal<number>(0);
-  
-  // Why use a method here? To centralize the math logic!
-  calculateResults() {
-     // Formula logic...
-     this.annualData.set(computedResults);
+  // 1. Define State using Signals
+  annualData = signal<any[]>([]);
+
+  // 2. The Calculation Method
+  calculateInvestmentResults() {
+    let investmentValue = this.initialInvestment();
+    const results = [];
+
+    for (let i = 0; i < this.duration(); i++) {
+      // Numerical Logic here...
+      results.push({ year: i + 1, valueEndOfYear: investmentValue, ... });
+    }
+    
+    // 3. Update the Signal to notify the UI
+    this.annualData.set(results);
   }
 }
 ```
 
-### **Step 2: Implement User Inputs with `ngModel`**
-We used Template-Driven forms to capture data quickly. **Why?** Because it's the fastest way to sync individual fields in simple forms.
+#### **2. Reactive Updates: `update()` vs `set()`**
+In the service, we use Signal methods to manage data:
+-   **`set()`**: Used to replace the entire array of results after the calculation.
+-   **`update()`**: Used when we want to modify a value based on its previous state (e.g., adding a single item).
 
-```html
-<!-- Why (ngSubmit)? To prevent page reloads automatically! -->
-<form (ngSubmit)="onSubmit()">
-  <input [(ngModel)]="initialInvestment" name="initialInvestment" />
-</form>
-```
-
-### **Step 3: Connect Component to Service**
-We used `inject()` to fetch the service and update it on form submission. **Why?** To share the latest inputs with the rest of the application.
-
-```typescript
-export class UserInputs {
-  private investmentService = inject(InvestmentService);
-
-  // Why update the service? So other components can see the new data!
-  onSubmit() {
-    this.investmentService.updateInitialInvestment(Number(this.initialInvestment()));
-    this.investmentService.calculateInvestmentResults();
-  }
-}
-```
-
-### **Step 4: Display Results**
-The Results component just "reads" from the Service. **Why?** To keep the UI clean and simple.
-
-```html
-<!-- Why use a loop? To display the array calculation result! -->
-@for (result of results(); track result.year) {
-  <tr>
-    <td>{{ result.year }}</td>
-    <td>{{ result.valueEndOfYear | currency }}</td>
-  </tr>
-}
-```
+#### **3. Component Communication**
+-   **UserInputs Component**: Uses `inject(InvestmentService)` to push new values and trigger `calculate()`.
+-   **Results Component**: Simply "reads" the `annualData()` signal. Angular handles the UI updates automatically!
 
 ---
 
-### 🧠 Interview & Mind-Working Questions
+### 🛡️ Senior Architect Review: Why this Architecture?
 
-**Q: Why did we use `inject(InvestmentService)` instead of creating a `new InvestmentService()` in the component?**
-A: Because `new` creates a **private** instance. Dependency Injection (`inject`) gives us the **Global** instance (Singleton), ensuring all components share the same treasure chest of data! 🗝️
-
-**Q: Why did we use `Number()` when passing input values to the service?**
-A: HTML inputs provide data as a `string` by default. Since we are doing math, we must convert it to a `number` to avoid errors like `"100" + "100" = "100100"`! 🧮
+1.  **Folder Structure (`/projects/`)**: Keeping secondary applications in a dedicated `projects` folder (Angular Workspace pattern) prevents the main `src` folder from becoming cluttered.
+2.  **Logic Separation**: By moving the formula to a Service, the Components remain "Dumb" (they only handle UI). This makes the code **DRY** (Don't Repeat Yourself) and **Testable**.
+3.  **Signal Efficiency**: Signals ensure that the Results table *only* refreshes when the specific data it needs changes, providing a premium, lag-free experience.
 
 ---
 
