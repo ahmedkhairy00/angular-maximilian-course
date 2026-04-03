@@ -57,3 +57,20 @@ updateDuration(value: number){
   this.duration.set(value);
 }
 }
+
+/* Where Split Up Components */
+/* 
+
+1 - Use Sepreation of Concerns and its one of SOLID Principles
+                             vs
+2 - Simplicity & Code Colocation (Keep Related Code Together)   
+
+3 - and Its Depends on the Project Size and Complexity
+
+4 -  There No Clear Right and Wrong It Depend On Programmer Preferences
+or guide lines  of the team you Are Working In and Complexity of the project you work on
+
+
+
+
+*/

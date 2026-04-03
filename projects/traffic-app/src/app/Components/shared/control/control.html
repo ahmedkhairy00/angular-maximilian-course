@@ -1,0 +1,6 @@
+<p class="control">
+  @if (label()) {
+    <label>{{ label() }}</label>
+  }
+  <ng-content select="input , textarea , select , button" />
+</p>

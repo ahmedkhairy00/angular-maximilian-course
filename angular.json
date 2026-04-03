@@ -131,6 +131,69 @@
           "builder": "@angular/build:unit-test"
         }
       }
+    },
+    "traffic-app": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "projects/traffic-app",
+      "sourceRoot": "projects/traffic-app/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/traffic-app/src/main.ts",
+            "tsConfig": "projects/traffic-app/tsconfig.app.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "projects/traffic-app/public"
+              }
+            ],
+            "styles": [
+              "projects/traffic-app/src/styles.css"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "traffic-app:build:production"
+            },
+            "development": {
+              "buildTarget": "traffic-app:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        }
+      }
     }
   }
 }
