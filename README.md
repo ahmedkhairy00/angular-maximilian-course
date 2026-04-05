@@ -124,54 +124,7 @@ A: Template (HTML), Styles (CSS), Class (TS Logic), and Metadata (@Component dec
 **Q: Why do we use a selector?**
 A: It acts as a custom HTML tag (e.g., `<app-user>`) so we can place the component anywhere in our app.
 
-### 🛡️ View Encapsulation: Controlling Style Scope
-
-Angular provides three ways to control how styles are applied to a component and whether they affect the rest of the application.
-
-> [!NOTE]
-> **ViewEncapsulation** is a TypeScript Enum that contains 3 values: `None`, `ShadowDom`, and `Emulated`.
-
-| Mode          | Effect                                                                 |
-| :------------ | :--------------------------------------------------------------------- |
-| **None**      | Styles are **Global**. They affect the entire app.                      |
-| **ShadowDom** | Styles use the browser's native Shadow DOM. They are fully scoped.    |
-| **Emulated**  | **Default**. Angular "emulates" scoping by adding unique attributes. |
-
-#### Example Implementation:
-```typescript
-@Component({
-  selector: 'app-control',
-  templateUrl: './control.html',
-  styleUrl: './control.css',
-  encapsulation: ViewEncapsulation.None, // Styles become global
-})
-```
-
-### 🧠 Interview & Mind-Working Questions
-**Q: What is the default encapsulation in Angular?**
-A: `ViewEncapsulation.Emulated`. It ensures styles don't "leak" out of the component while still being compatible with all browsers.
-
 ---
-
-### 🏷️ Component Attribute Selectors
-
-Instead of using a component as an HTML tag (e.g., `<app-button>`), you can use it as an **Attribute** on an existing element (e.g., `<button appButton>`).
-
-**Why?** This prevents "Redundant DOM Elements." If you use `<app-button><button>...</button></app-button>`, you have an extra `app-button` tag in the DOM. Using an attribute selector keeps the DOM clean.
-
-```typescript
-@Component({
-  selector: 'button[appButton], a[appButton]', // Component applies to buttons/links with appButton attribute
-  standalone: true,
-  template: '<ng-content />',
-})
-export class ButtonComponent {}
-```
-
-**How to use it:**
-```html
-<button appButton>Click Me</button>
-```
 
 ---
 
@@ -626,33 +579,7 @@ _Analogy: A Treasure Chest in the browser that survives a voyage._
 - **Content Projection (<ng-content>)**: Allows you to create "wrapper" components that can accept and display content from their parent components.
 - **Pipes**: Transformers that take a value and return it in a different shape (e.g., `DatePipe`).
 
-### 🏗️ Advanced Content Projection: `<ng-content>` Selectors
 
-Senior developers use **Content Projection** to create flexible "Wrapper" components like cards, modals, or form controls.
-
-#### 1. Multi-Slot Projection with `select`
-You can define multiple "slots" in your component where different types of content will be injected.
-
-```html
-<!-- In control.html -->
-<ng-content select="input, textarea, select, button" />
-```
-
-#### 2. Projection Fallbacks
-You can provide default content inside `<ng-content>` that will show if no content is projected.
-
-```html
-<ng-content>
-  <p>Default content if nothing is provided!</p>
-</ng-content>
-```
-
-#### 3. Advanced Projection with `ngProjectAs`
-Sometimes you need to project content into a specific slot even if the element doesn't match the selector. You can use the `ngProjectAs` attribute.
-
-```html
-<app-button ngProjectAs="header">Click Me</app-button>
-```
 
 ### 6. Code Lessons Summary: Implementation Examples
 
@@ -1064,13 +991,7 @@ In the service, we use Signal methods to manage data:
 2.  **Logic Separation**: By moving the formula to a Service, the Components remain "Dumb" (they only handle UI). This makes the code **DRY** (Don't Repeat Yourself) and **Testable**.
 3.  **Signal Efficiency**: Signals ensure that the Results table *only* refreshes when the specific data it needs changes, providing a premium, lag-free experience.
 
-### 🛡️ Senior Architect Review: Where to Split Components?
-
-When deciding whether to break a large component into smaller ones, follow these senior-level guidelines:
-
-1.  **Separation of Concerns (SOLID)**: If a component is doing too many things (handling UI, fetching data, calculating math), split it.
-2.  **Simplicity & Colocation**: For very small projects, keeping code together is faster. For large apps, separation is mandatory.
-3.  **The Team Standard**: Always follow your team's style guide. There is no "perfect" right or wrong; it's about consistency and maintainability.
+---
 
 ---
 
@@ -1122,3 +1043,94 @@ A: It allows you to observe the current value of a signal and even manually trig
 ---
 
 _Advanced Documentation designed for Senior Growth._
+
+---
+
+### 🛡️ View Encapsulation: Controlling Style Scope
+
+Angular provides three ways to control how styles are applied to a component and whether they affect the rest of the application.
+
+> [!NOTE]
+> **ViewEncapsulation** is a TypeScript Enum that contains 3 values: `None`, `ShadowDom`, and `Emulated`.
+
+| Mode          | Effect                                                                 |
+| :------------ | :--------------------------------------------------------------------- |
+| **None**      | Styles are **Global**. They affect the entire app.                      |
+| **ShadowDom** | Styles use the browser's native Shadow DOM. They are fully scoped.    |
+| **Emulated**  | **Default**. Angular "emulates" scoping by adding unique attributes. |
+
+#### Example Implementation:
+```typescript
+@Component({
+  selector: 'app-control',
+  templateUrl: './control.html',
+  styleUrl: './control.css',
+  encapsulation: ViewEncapsulation.None, // Styles become global
+})
+```
+
+### 🧠 Interview & Mind-Working Questions
+**Q: What is the default encapsulation in Angular?**
+A: `ViewEncapsulation.Emulated`. It ensures styles don't "leak" out of the component while still being compatible with all browsers.
+
+---
+
+### 🏷️ Component Attribute Selectors
+
+Instead of using a component as an HTML tag (e.g., `<app-button>`), you can use it as an **Attribute** on an existing element (e.g., `<button appButton>`).
+
+**Why?** This prevents "Redundant DOM Elements." If you use `<app-button><button>...</button></app-button>`, you have an extra `app-button` tag in the DOM. Using an attribute selector keeps the DOM clean.
+
+```typescript
+@Component({
+  selector: 'button[appButton], a[appButton]', // Component applies to buttons/links with appButton attribute
+  standalone: true,
+  template: '<ng-content />',
+})
+export class ButtonComponent {}
+```
+
+**How to use it:**
+```html
+<button appButton>Click Me</button>
+```
+
+---
+
+### 🏗️ Advanced Content Projection: `<ng-content>` Selectors
+
+Senior developers use **Content Projection** to create flexible "Wrapper" components like cards, modals, or form controls.
+
+#### 1. Multi-Slot Projection with `select`
+You can define multiple "slots" in your component where different types of content will be injected.
+
+```html
+<!-- In control.html -->
+<ng-content select="input, textarea, select, button" />
+```
+
+#### 2. Projection Fallbacks
+You can provide default content inside `<ng-content>` that will show if no content is projected.
+
+```html
+<ng-content>
+  <p>Default content if nothing is provided!</p>
+</ng-content>
+```
+
+#### 3. Advanced Projection with `ngProjectAs`
+Sometimes you need to project content into a specific slot even if the element doesn't match the selector. You can use the `ngProjectAs` attribute.
+
+```html
+<app-button ngProjectAs="header">Click Me</app-button>
+```
+
+---
+
+### 🛡️ Senior Architect Review: Where to Split Components?
+
+When deciding whether to break a large component into smaller ones, follow these senior-level guidelines:
+
+1.  **Separation of Concerns (SOLID)**: If a component is doing too many things (handling UI, fetching data, calculating math), split it.
+2.  **Simplicity & Colocation**: For very small projects, keeping code together is faster. For large apps, separation is mandatory.
+3.  **The Team Standard**: Always follow your team's style guide. There is no "perfect" right or wrong; it's about consistency and maintainability.
