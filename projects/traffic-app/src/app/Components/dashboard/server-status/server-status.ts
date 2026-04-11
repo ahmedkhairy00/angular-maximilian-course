@@ -7,7 +7,7 @@ import { Component ,input,signal} from '@angular/core';
   styleUrl: './server-status.css',
 })
 export class ServerStatus {
-  status=signal<'online' | 'offline' | 'unknown'>('offline');
+  status = signal<'online' | 'offline' | 'unknown'>('offline');
 
   constructor(){
    

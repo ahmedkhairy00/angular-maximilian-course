@@ -50,11 +50,11 @@ Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app w
 
 Angular is built on the **MVVM (Model-View-ViewModel)** pattern. Every file you write maps to one of three layers.
 
-| Layer | Angular File | Responsibility |
-|:--|:--|:--|
-| **Model** | `service.ts` + `signal()` | Owns data and business logic. Zero knowledge of UI. |
-| **ViewModel** | `component.ts` | Bridge: reads from Model, exposes data to View via bindings. |
-| **View** | `component.html` | Pure display. Knows nothing about where data comes from. |
+| Layer         | Angular File              | Responsibility                                               |
+| :------------ | :------------------------ | :----------------------------------------------------------- |
+| **Model**     | `service.ts` + `signal()` | Owns data and business logic. Zero knowledge of UI.          |
+| **ViewModel** | `component.ts`            | Bridge: reads from Model, exposes data to View via bindings. |
+| **View**      | `component.html`          | Pure display. Knows nothing about where data comes from.     |
 
 #### Why MVVM and not MVC?
 
@@ -135,7 +135,7 @@ A: Each layer has one job. You can swap the data source, redesign the template, 
 > **Official Reference**: [Angular — Component Metadata](https://angular.dev/guide/components)
 > **TypeScript Reference**: [TypeScript Decorators](https://www.typescriptlang.org/docs/handbook/decorators.html)
 
-The **Decorator** is a Gang of Four structural pattern: *attach additional metadata or behavior to a class without modifying its source code*. In Angular, every `@` symbol — `@Component`, `@Injectable`, `@Input`, `@NgModule` — is a Decorator.
+The **Decorator** is a Gang of Four structural pattern: _attach additional metadata or behavior to a class without modifying its source code_. In Angular, every `@` symbol — `@Component`, `@Injectable`, `@Input`, `@NgModule` — is a Decorator.
 
 #### What a Decorator Really Is
 
@@ -165,12 +165,12 @@ Component({ selector: 'app-user', templateUrl: './user.html' })(UserComponent);
 
 #### The Four Decorator Types Angular Uses
 
-| Type | Angular Examples | Applied To | Purpose |
-|:--|:--|:--|:--|
-| **Class** | `@Component` `@Injectable` `@NgModule` `@Pipe` | Whole class | Registers the class with Angular |
-| **Property** | `@Input` `@Output` `@ViewChild` `@ContentChild` | Class field | Marks a field for Angular's data-flow |
-| **Parameter** | `@Inject` `@Optional` `@Self` | Constructor param | Overrides DI token resolution |
-| **Method** | `@HostListener` | Class method | Binds a DOM event to the method |
+| Type          | Angular Examples                                | Applied To        | Purpose                               |
+| :------------ | :---------------------------------------------- | :---------------- | :------------------------------------ |
+| **Class**     | `@Component` `@Injectable` `@NgModule` `@Pipe`  | Whole class       | Registers the class with Angular      |
+| **Property**  | `@Input` `@Output` `@ViewChild` `@ContentChild` | Class field       | Marks a field for Angular's data-flow |
+| **Parameter** | `@Inject` `@Optional` `@Self`                   | Constructor param | Overrides DI token resolution         |
+| **Method**    | `@HostListener`                                 | Class method      | Binds a DOM event to the method       |
 
 ```typescript
 // CLASS Decorator — registers as injectable service
@@ -284,12 +284,12 @@ graph LR
     SIG -- "value changed — re-runs" --> O3
 ```
 
-| Observer API | What it does | When to use |
-|:--|:--|:--|
-| `signal()` | Writable reactive value (the Subject) | Mutable state — tasks, user, cart |
-| `computed()` | Read-only derived value — lazy | Stats, filtered lists, transformations |
-| `effect()` | Side-effect runner on signal change | Logging, external sync, localStorage |
-| `output()` / `EventEmitter` | One-time event push — not stored | Parent-child communication |
+| Observer API                | What it does                          | When to use                            |
+| :-------------------------- | :------------------------------------ | :------------------------------------- |
+| `signal()`                  | Writable reactive value (the Subject) | Mutable state — tasks, user, cart      |
+| `computed()`                | Read-only derived value — lazy        | Stats, filtered lists, transformations |
+| `effect()`                  | Side-effect runner on signal change   | Logging, external sync, localStorage   |
+| `output()` / `EventEmitter` | One-time event push — not stored      | Parent-child communication             |
 
 ```typescript
 tasks = signal<Task[]>([]);
@@ -448,6 +448,216 @@ A: Feature flags — provide a real API service in production and a fake in-memo
 
 ---
 
+### 🚫 Why You CANNOT `new MyComponent()` — And Is It an Abstract Class?
+
+> **Official Reference**: [Angular Docs — Dependency Injection](https://angular.dev/guide/di)
+> **Official Reference**: [Angular Docs — Programmatic Rendering](https://angular.dev/guide/components/programmatic-rendering)
+
+This is one of the most common **senior interview questions** and one of the most misunderstood concepts in Angular. Let's answer both questions directly and permanently.
+
+---
+
+#### ❓ Question 1: Is an Angular Component an Abstract Class?
+
+**No. An Angular component is a regular TypeScript class.**
+
+There is no `abstract` keyword on it. TypeScript will not stop you from writing `new MyComponent()` — it will compile without a type error. The restriction is a **framework runtime contract**, not a TypeScript language rule.
+
+```typescript
+// This is what Angular's component class looks like internally
+// No abstract keyword — it is a plain TypeScript class
+export class TaskComponent {
+  private taskService = inject(TaskService); // this is where the problem is
+  title = input.required<string>();
+  ngOnInit() { ... }
+}
+
+// TypeScript allows this — it WILL compile
+const comp = new TaskComponent(); // ← No TS error, but BROKEN at runtime
+```
+
+---
+
+#### ❓ Question 2: Why Does `new MyComponent()` Break Everything?
+
+When Angular creates a component, it does **four things** that `new` completely skips:
+
+```mermaid
+graph TD
+    subgraph NEW ["❌ new MyComponent()  —  all four steps SKIPPED"]
+        N1["1. DI Resolution\n inject() returns undefined\n Services are null/undefined"]
+        N2["2. Host DOM Element\n No HTML node to attach to\n Component is invisible"]
+        N3["3. Change Detection\n Not registered in Signal graph\n UI never updates"]
+        N4["4. Lifecycle Hooks\n ngOnInit, ngOnChanges\n never called"]
+    end
+
+    subgraph ANGULAR ["✅ Angular creates it  —  all four steps run"]
+        A1["1. DI Resolution\n All inject() calls resolved\n from the correct DI tree"]
+        A2["2. Host DOM Element\n Linked to a real DOM node\n in the correct position"]
+        A3["3. Change Detection\n Registered in Signal or Zone graph\n UI updates automatically"]
+        A4["4. Lifecycle Hooks\n Called in the correct order:\n ngOnInit → ngOnChanges → ..."]
+    end
+```
+
+```typescript
+// ❌ BROKEN — never do this
+const comp = new TaskComponent();
+// comp.taskService  →  undefined  (inject() was never called)
+// comp.title()      →  throws     (signal input not initialized)
+// comp.ngOnInit()   →  errors     (service is undefined inside)
+// Zero DOM connection — Angular's CD never watches this object
+
+// ✅ CORRECT WAY 1 — use in a template (most common, Angular handles everything)
+// <app-task [title]="'My Task'" />
+
+// ✅ CORRECT WAY 2 — dynamic creation via ViewContainerRef (advanced)
+@Component({ ... })
+export class ParentComponent {
+  private vcr = inject(ViewContainerRef);
+
+  createDynamically() {
+    // Angular resolves DI, creates the DOM node,
+    // registers change detection — ALL automatically
+    const ref = this.vcr.createComponent(TaskComponent);
+    ref.setInput('title', 'My Task'); // set inputs AFTER creation
+  }
+}
+```
+
+> [!WARNING]
+> Calling `new MyComponent()` produces a "zombie object" — it has the shape of a component but none of the powers. Every `inject()` call returns `undefined`, causing silent null errors that are extremely hard to debug. Angular has no knowledge this object exists.
+
+---
+
+#### ❓ Question 3: Then Why CAN You Use `extends` (Inheritance)?
+
+Because **inheritance is a TypeScript compile-time operation** — it happens before Angular's runtime ever touches anything.
+
+When you write `class ChildComponent extends BaseComponent`, TypeScript merges the two classes at compile time. Angular sees only the final `ChildComponent` with its own `@Component` decorator. Angular manages `ChildComponent` through its normal DI + DOM + CD pipeline. The base class is invisible to the framework.
+
+```mermaid
+graph TD
+    subgraph TS ["TypeScript Layer — compile time"]
+        BASE["BaseFormComponent\nNo @Component decorator\nShared signals and methods\nNever used directly"]
+        CHILD["LoginComponent\n@Component decorator present\nInherits everything from Base"]
+        BASE -- "class extends (TS merges at compile time)" --> CHILD
+    end
+
+    subgraph NG ["Angular Runtime — after compile"]
+        FW["Angular sees ONLY LoginComponent\nReads @Component decorator\nRuns full DI + DOM + CD pipeline"]
+    end
+
+    CHILD --> FW
+```
+
+```typescript
+// ── BASE CLASS — shared logic, NO @Component decorator ──────────
+// Mark as abstract to prevent accidental direct use
+export abstract class BaseFormComponent {
+  protected isDirty = signal(false);
+  protected isSaving = signal(false);
+
+  protected markDirty(): void {
+    this.isDirty.set(true);
+  }
+  protected resetState(): void {
+    this.isDirty.set(false);
+    this.isSaving.set(false);
+  }
+}
+// ↑ Angular never touches this class — it has no decorator
+
+// ── CHILD A — Angular manages this one through its full pipeline ─
+@Component({
+  selector: 'app-login',
+  templateUrl: './login.component.html',
+  standalone: true,
+})
+export class LoginComponent extends BaseFormComponent {
+  // Inherits isDirty, isSaving, markDirty(), resetState()
+  // Angular's DI container creates THIS instance, not the base
+
+  onInput(): void {
+    this.markDirty(); // method inherited from BaseFormComponent
+  }
+}
+
+// ── CHILD B — gets the same shared logic, different template ─────
+@Component({
+  selector: 'app-register',
+  templateUrl: './register.component.html',
+  standalone: true,
+})
+export class RegisterComponent extends BaseFormComponent {
+  // Also inherits isDirty, isSaving, markDirty(), resetState()
+  // Its own @Component decorator — Angular manages it independently
+}
+```
+
+---
+
+#### ❓ Why Mark the Base as `abstract`?
+
+`abstract` is a **TypeScript safety guardrail**, not an Angular requirement. It prevents anyone from accidentally writing `new BaseFormComponent()` — which would also be broken (no `@Component` decorator, no DI resolution). It signals to every developer: _"This class exists only to be extended, never used directly."_
+
+```typescript
+export abstract class BaseFormComponent { ... }
+
+// Now this is a COMPILE ERROR — TypeScript stops you immediately
+const base = new BaseFormComponent(); // ❌ Cannot create instance of abstract class
+```
+
+> [!NOTE]
+> If you do NOT mark the base as `abstract`, Angular won't complain. But a future developer might try to use it as a standalone component and be confused when it breaks. `abstract` is defensive programming — use it on every base class that has no `@Component` decorator.
+
+---
+
+#### 📊 The Full Decision Matrix
+
+```mermaid
+graph TD
+    Q{"Do you need a\ncomponent instance?"}
+    Q -- "In a template\nknown at compile time" --> T["Use it in HTML\n&lt;app-task /&gt;"]
+    Q -- "Created at runtime\nin TypeScript code" --> D["ViewContainerRef\n.createComponent(TaskComponent)"]
+    Q -- "Share logic between\nmultiple components" --> I["class extends BaseComponent\nNo @Component on base"]
+    Q -- "Share data or services\nbetween components" --> S["inject(MyService)\nSingleton pattern"]
+
+    T --> NEVER["❌ NEVER: new TaskComponent()"]
+    D --> NEVER
+```
+
+| Scenario                               | Correct Approach                     | Why                                    |
+| :------------------------------------- | :----------------------------------- | :------------------------------------- |
+| Render in template                     | `<app-task />`                       | Angular handles DI + DOM + CD          |
+| Create at runtime dynamically          | `vcr.createComponent(TaskComponent)` | Framework still manages the instance   |
+| Share logic across similar components  | `extends BaseFormComponent`          | Pure TypeScript, runs before Angular   |
+| Share data across unrelated components | `inject(TaskService)`                | Singleton, always preferred            |
+| **`new TaskComponent()`**              | **Never**                            | Skips DI, DOM, CD, and lifecycle hooks |
+
+---
+
+#### 🧠 Interview & Mind-Working Questions
+
+**Q: Is an Angular component class abstract?**
+A: No. It is a regular TypeScript class with no `abstract` keyword. TypeScript allows `new MyComponent()` without a compile error. The restriction is a framework runtime contract — Angular's DI, DOM connection, change detection, and lifecycle hooks are all skipped when you use `new` directly.
+
+**Q: What are the four things Angular does when it creates a component that `new` skips?**
+A: 1. Resolves all `inject()` calls from the DI tree. 2. Creates and attaches a host DOM element. 3. Registers the instance with the change detection graph (Signals or Zone.js). 4. Calls lifecycle hooks (`ngOnInit`, `ngOnChanges`, etc.) in the correct order.
+
+**Q: Why does inheritance work if direct instantiation doesn't?**
+A: Because inheritance (`extends`) is a TypeScript compile-time operation. It happens before Angular ever runs. The child component with its own `@Component` decorator is what Angular sees and manages. The base class is just TypeScript — Angular is unaware it exists.
+
+**Q: Should the base component class have a `@Component` decorator?**
+A: No. A base class meant for inheritance only should have no decorator. Adding `@Component` to a base would register it as a standalone component, which is not the intent.
+
+**Q: What is the correct Angular API for creating a component dynamically in TypeScript code?**
+A: `ViewContainerRef.createComponent(MyComponent)`. Angular still manages DI, DOM, and change detection — you just tell it which component to create and where.
+
+**Q: Why mark a base component class as `abstract`?**
+A: It is a TypeScript safety guardrail. It prevents anyone from writing `new BaseFormComponent()` (which would also be broken) and signals clearly: "This class exists only to be extended, never used directly."
+
+---
+
 ### 🔑 All Six Patterns — Quick Reference
 
 ```mermaid
@@ -462,14 +672,613 @@ graph TD
     MVVM --> DEC --> SING --> OBS --> FAC --> STRAT
 ```
 
-| Pattern | Angular Implementation | One-Line Rule |
-|:--|:--|:--|
-| **MVVM** | Service + Component + Template | Data down, events up, model stays pure |
-| **Decorator** | `@Component` `@Injectable` `@Input` | Metadata at build time, not runtime |
-| **Singleton** | `providedIn: 'root'` | One instance shared by the whole app |
-| **Observer** | `signal()` `computed()` `effect()` | Declare dependencies; Angular notifies |
-| **Facade** | Service hiding HTTP/cache/errors | One method for the component; all complexity inside |
-| **Strategy** | `provide` + `useClass` | Same interface, different implementation per context |
+| Pattern       | Angular Implementation              | One-Line Rule                                        |
+| :------------ | :---------------------------------- | :--------------------------------------------------- |
+| **MVVM**      | Service + Component + Template      | Data down, events up, model stays pure               |
+| **Decorator** | `@Component` `@Injectable` `@Input` | Metadata at build time, not runtime                  |
+| **Singleton** | `providedIn: 'root'`                | One instance shared by the whole app                 |
+| **Observer**  | `signal()` `computed()` `effect()`  | Declare dependencies; Angular notifies               |
+| **Facade**    | Service hiding HTTP/cache/errors    | One method for the component; all complexity inside  |
+| **Strategy**  | `provide` + `useClass`              | Same interface, different implementation per context |
+
+---
+
+### 🚫 Why You CANNOT `new MyComponent()` — And Is It an Abstract Class?
+
+> **Official Reference**: [Angular Docs — Dependency Injection](https://angular.dev/guide/di)
+> **Official Reference**: [Angular Docs — Programmatic Rendering](https://angular.dev/guide/components/programmatic-rendering)
+
+This is one of the most asked **senior interview questions**. Two sub-questions, two direct answers.
+
+---
+
+#### ❓ Is an Angular Component an Abstract Class?
+
+**No.** A component is a **regular TypeScript class** with no `abstract` keyword. TypeScript will not stop you from writing `new MyComponent()` — it compiles without a type error. The restriction is a **framework runtime contract**, not a language rule.
+
+```typescript
+// Angular's component is a plain class — no abstract keyword
+export class TaskComponent {
+  private taskService = inject(TaskService); // ← this is the problem
+  title = input.required<string>();
+}
+
+// TypeScript ALLOWS this — compiles fine — but CRASHES at runtime
+const comp = new TaskComponent();
+// comp.taskService → undefined   (inject() was never resolved)
+// comp.title()    → throws       (signal input never initialized)
+```
+
+---
+
+#### ❓ Why Does `new` Break Everything?
+
+When Angular creates a component it runs **four mandatory steps** that `new` skips entirely:
+
+```mermaid
+graph TD
+    subgraph WRONG ["❌  new TaskComponent()  —  all four steps SKIPPED"]
+        N1["1 · DI Resolution\ninject() returns undefined\nAll services are null"]
+        N2["2 · Host DOM Element\nNo HTML node created\nComponent is invisible"]
+        N3["3 · Change Detection\nNot in Signal or Zone graph\nUI never updates"]
+        N4["4 · Lifecycle Hooks\nngOnInit ngOnChanges\nnever called"]
+    end
+
+    subgraph RIGHT ["✅  Angular creates it  —  all four steps run in order"]
+        A1["1 · DI Resolution\nAll inject() resolved\nfrom correct DI tree"]
+        A2["2 · Host DOM Element\nLinked to a real DOM node\nin the correct position"]
+        A3["3 · Change Detection\nRegistered in Signal graph\nUI auto-updates"]
+        A4["4 · Lifecycle Hooks\nCalled in correct order\nngOnInit → ngOnChanges…"]
+    end
+```
+
+```typescript
+// ❌ BROKEN — never do this
+const comp = new TaskComponent();
+
+// ✅ CORRECT WAY 1 — use in a template (most common)
+// Angular handles DI + DOM + CD automatically
+// <app-task [title]="'My Task'" />
+
+// ✅ CORRECT WAY 2 — dynamic creation in TypeScript code
+@Component({ ... })
+export class ParentComponent {
+  private vcr = inject(ViewContainerRef);
+
+  createDynamically() {
+    // Angular still runs all four steps — you just trigger it
+    const ref = this.vcr.createComponent(TaskComponent);
+    ref.setInput('title', 'My Task'); // set inputs AFTER creation
+  }
+}
+```
+
+> [!WARNING]
+> `new MyComponent()` produces a **"zombie object"** — it has the shape of a component but none of the powers. Every `inject()` returns `undefined`, causing silent null errors that are extremely hard to debug. Angular has zero knowledge this object exists.
+
+---
+
+#### ❓ Why CAN You Use `extends` (Inheritance)?
+
+Because **inheritance is a TypeScript compile-time operation** — it happens before Angular's runtime ever starts. TypeScript merges the base and child classes at compile time. Angular sees only the final `ChildComponent` with its own `@Component` decorator and manages it normally.
+
+```mermaid
+graph TD
+    subgraph TS ["TypeScript Layer — compile time"]
+        BASE["BaseFormComponent\nNo @Component decorator\nShared signals and helpers\nNever used directly by Angular"]
+        CHILD["LoginComponent\n@Component decorator\nInherits all from Base"]
+        BASE -- "class extends — TS merges at compile time" --> CHILD
+    end
+    subgraph NG ["Angular Runtime — after compile"]
+        FW["Angular sees ONLY LoginComponent\nReads @Component metadata\nRuns full DI + DOM + CD pipeline"]
+    end
+    CHILD --> FW
+```
+
+```typescript
+// BASE — shared logic, NO @Component, mark abstract as a safety guardrail
+export abstract class BaseFormComponent {
+  protected isDirty = signal(false);
+  protected isSaving = signal(false);
+
+  protected markDirty(): void {
+    this.isDirty.set(true);
+  }
+  protected resetState(): void {
+    this.isDirty.set(false);
+    this.isSaving.set(false);
+  }
+}
+
+// CHILD A — Angular manages this one via its full pipeline
+@Component({ selector: 'app-login', templateUrl: './login.html', standalone: true })
+export class LoginComponent extends BaseFormComponent {
+  onInput() {
+    this.markDirty();
+  } // inherited from Base
+}
+
+// CHILD B — same shared logic, different template
+@Component({ selector: 'app-register', templateUrl: './register.html', standalone: true })
+export class RegisterComponent extends BaseFormComponent {
+  // also inherits isDirty, isSaving, markDirty(), resetState()
+}
+```
+
+> [!NOTE]
+> `abstract` on the base class is a **TypeScript safety guardrail** — it produces a compile error if anyone tries `new BaseFormComponent()`. It is not required by Angular. Use it on every base that has no `@Component` decorator.
+
+#### 🧠 Interview & Mind-Working Questions
+
+**Q: Is an Angular component an abstract class?**
+A: No. It is a regular TypeScript class. TypeScript allows `new MyComponent()` without a type error. The restriction is a framework runtime contract — DI, DOM, change detection, and lifecycle hooks are all skipped when you use `new`.
+
+**Q: What are the four things Angular does when creating a component that `new` skips?**
+A: 1. Resolves all `inject()` calls from the DI tree. 2. Creates and attaches a host DOM element. 3. Registers the instance with change detection (Signals or Zone.js). 4. Calls lifecycle hooks in correct order.
+
+**Q: Why does `extends` work if `new` doesn't?**
+A: Inheritance is a TypeScript compile-time operation. Angular sees only the final child class with its own `@Component` decorator and manages it normally through its DI + DOM + CD pipeline.
+
+**Q: What is the correct way to create a component dynamically in TypeScript code?**
+A: `ViewContainerRef.createComponent(MyComponent)`. Angular still manages DI, DOM, and change detection — you just tell it which component to create.
+
+---
+
+### 🔄 Lifecycle Hooks — The Component's Life Journey
+
+> **Official Reference**: [Angular Docs — Lifecycle Hooks](https://angular.dev/guide/components/lifecycle)
+
+Every Angular component goes through a predictable sequence of events from creation to destruction. Angular provides **hook methods** you can implement to run your own code at each stage.
+
+```mermaid
+graph TD
+    CON["constructor()\nClass instantiated by DI\nDO: inject services\nDONT: access DOM or inputs"]
+    CH["ngOnChanges(changes)\nCalled when @Input values change\nFirst call: BEFORE ngOnInit\nSubsequent: every input change"]
+    IN["ngOnInit()\nCalled ONCE after first ngOnChanges\nDO: HTTP calls, signal setup\nInputs are available here"]
+    DC["ngDoCheck()\nCustom change detection\nCalled every CD cycle\nExpensive — use carefully"]
+    ACI["ngAfterContentInit()\nProjected content ready\n ng-content children accessible\nCalled ONCE"]
+    ACC["ngAfterContentChecked()\nAfter every CD on projected content\nCalled every cycle"]
+    AVI["ngAfterViewInit()\nComponent view + children ready\n@ViewChild refs available\nCalled ONCE"]
+    AVC["ngAfterViewChecked()\nAfter every CD on view\nCalled every cycle"]
+    OD["ngOnDestroy()\nCalled before component removed\nDO: cleanup subscriptions\nDO: clearInterval setInterval"]
+
+    CON --> CH --> IN --> DC --> ACI --> ACC --> AVI --> AVC
+    AVC -- "input changes" --> CH
+    AVC -- "CD cycle" --> DC
+    AVC -- "component removed" --> OD
+
+    style CON fill:#E1F5EE,stroke:#0F6E56,color:#085041
+    style IN  fill:#EEEDFE,stroke:#534AB7,color:#3C3489
+    style OD  fill:#FAECE7,stroke:#993C1D,color:#712B13
+    style AVI fill:#E6F1FB,stroke:#185FA5,color:#0C447C
+```
+
+#### The Three Hooks You Use Every Day
+
+```typescript
+import {
+  Component,
+  OnInit,
+  OnChanges,
+  OnDestroy,
+  SimpleChanges,
+  input,
+  inject,
+} from '@angular/core';
+
+@Component({ selector: 'app-task', standalone: true, template: `...` })
+export class TaskComponent implements OnInit, OnChanges, OnDestroy {
+  // Signal input — available after first ngOnChanges
+  taskId = input.required<string>();
+
+  private taskService = inject(TaskService);
+  private intervalId!: ReturnType<typeof setInterval>;
+
+  // ── ngOnChanges ──────────────────────────────────────────────────
+  // Fires BEFORE ngOnInit AND every time an @Input/@input() changes
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['taskId']) {
+      const prev = changes['taskId'].previousValue;
+      const curr = changes['taskId'].currentValue;
+      console.log(`taskId changed from ${prev} to ${curr}`);
+      // Reload data when the ID changes — common pattern
+      this.taskService.loadTask(curr);
+    }
+  }
+
+  // ── ngOnInit ─────────────────────────────────────────────────────
+  // Fires ONCE after the first ngOnChanges — inputs are ready
+  ngOnInit(): void {
+    // Safe to read inputs here
+    console.log('Component ready. taskId =', this.taskId());
+
+    // Start timers or subscriptions here
+    this.intervalId = setInterval(() => this.taskService.refresh(), 30_000);
+  }
+
+  // ── ngOnDestroy ──────────────────────────────────────────────────
+  // Fires when the component is removed from the DOM
+  // ALWAYS clean up here to prevent memory leaks
+  ngOnDestroy(): void {
+    clearInterval(this.intervalId); // stop the timer
+    // unsubscribe from Observables, close WebSockets, etc.
+  }
+}
+```
+
+#### `ngAfterViewInit` — When `@ViewChild` Is Ready
+
+```typescript
+import { Component, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+
+@Component({
+  standalone: true,
+  template: `<input #searchInput type="text" placeholder="Search..." />`,
+})
+export class SearchComponent implements AfterViewInit {
+  // @ViewChild refs are NOT available in ngOnInit — only in ngAfterViewInit
+  @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
+
+  ngAfterViewInit(): void {
+    // DOM is fully rendered — safe to access the real element
+    this.searchInput.nativeElement.focus();
+  }
+}
+```
+
+#### `SimpleChanges` — Reading What Actually Changed
+
+```typescript
+ngOnChanges(changes: SimpleChanges): void {
+  // changes is a key-value map of every changed input
+  if (changes['userId']) {
+    console.log('Previous:', changes['userId'].previousValue);
+    console.log('Current:',  changes['userId'].currentValue);
+    console.log('First run?', changes['userId'].firstChange); // true on first call
+  }
+}
+```
+
+#### 🧠 Interview & Mind-Working Questions
+
+**Q: What is the difference between `constructor` and `ngOnInit`?**
+A: The `constructor` runs when the TypeScript class is instantiated — `@Input` values are NOT yet set. `ngOnInit` runs after the first `ngOnChanges`, meaning all inputs are available. Always do Angular-related setup (HTTP calls, signal reads, input access) in `ngOnInit`, not the constructor.
+
+**Q: When does `ngOnChanges` fire relative to `ngOnInit`?**
+A: `ngOnChanges` fires FIRST — before `ngOnInit` on the very first cycle. After that, it fires every time an `@Input` or `input()` value changes. `ngOnInit` fires only once.
+
+**Q: Why must you clean up in `ngOnDestroy`?**
+A: Angular removes the component from the DOM but JavaScript's garbage collector cannot clean up active timers, open WebSocket connections, or RxJS subscriptions that hold references to the component. Without cleanup, those keep running and hold the component in memory — a memory leak.
+
+**Q: Why can't you access `@ViewChild` in `ngOnInit`?**
+A: Because the component's view (its template HTML) has not been rendered yet when `ngOnInit` fires. The DOM elements exist only after `ngAfterViewInit` is called.
+
+---
+
+### ⚡ Event Handling — Every Class and Method Angular Provides
+
+> **Official Reference**: [Angular Docs — Event Binding](https://angular.dev/guide/templates/event-binding)
+> **Official Reference**: [Angular Docs — Custom Events](https://angular.dev/guide/components/outputs)
+
+Angular gives you **five different APIs** to handle events. Each has a specific purpose and the right one depends on WHERE the event lives.
+
+```mermaid
+graph TD
+    subgraph Sources ["Event Sources"]
+        DOM["DOM Events\nclick, keydown\nmouseover, scroll\ninput, submit"]
+        COMP["Component Events\nchild notifying parent\ncustom business events"]
+    end
+
+    subgraph APIs ["Angular APIs — pick the right one"]
+        TE["Template ( ) binding\n(click)='handler()'\nSimplest, most common"]
+        HL["@HostListener\nListen on host element\nor document and window"]
+        EE["EventEmitter + @Output\nTraditional child→parent\nstill widely used"]
+        OUT["output() function\nModern child→parent\nno EventEmitter needed"]
+        R2["Renderer2\nProgrammatic listener\nSSR-safe, dynamic"]
+    end
+
+    DOM --> TE
+    DOM --> HL
+    DOM --> R2
+    COMP --> EE
+    COMP --> OUT
+```
+
+---
+
+#### API 1: Template Event Binding `( )` — The Most Common
+
+The simplest way. Bind any DOM event directly in the template with parentheses.
+
+```typescript
+@Component({
+  standalone: true,
+  template: `
+    <!-- Basic click -->
+    <button (click)="onSave()">Save</button>
+
+    <!-- Passing $event — the native DOM event object -->
+    <input (input)="onInput($event)" />
+
+    <!-- Keyboard events -->
+    <input (keydown.enter)="onSearch()" />
+    <input (keydown.escape)="onClear()" />
+
+    <!-- Mouse events -->
+    <div (mouseover)="onHover()" (mouseout)="onLeave()"></div>
+
+    <!-- Form submit -->
+    <form (ngSubmit)="onSubmit()">...</form>
+  `,
+})
+export class FormComponent {
+  onSave(): void {
+    console.log('Saved!');
+  }
+
+  // $event is the native InputEvent from the DOM
+  onInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    console.log('User typed:', value);
+  }
+
+  onSearch(): void {
+    console.log('Enter pressed!');
+  }
+}
+```
+
+---
+
+#### API 2: `@HostListener` — Listen to Events on the Host Element or Global Objects
+
+Use when you need to listen to events on the component's **own host element**, or on **`document` / `window`** (global keyboard shortcuts, scroll detection, resize).
+
+```typescript
+import { Component, HostListener } from '@angular/core';
+
+@Component({ selector: 'app-modal', standalone: true, template: `...` })
+export class ModalComponent {
+  // ── Listen on the HOST element itself ─────────────────────────
+  @HostListener('click', ['$event'])
+  onHostClick(event: MouseEvent): void {
+    // Fires when the user clicks anywhere on <app-modal>
+    if ((event.target as HTMLElement).classList.contains('backdrop')) {
+      this.close();
+    }
+  }
+
+  // ── Listen on the DOCUMENT (global) ───────────────────────────
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    // Fires when user presses Escape anywhere in the app
+    this.close();
+  }
+
+  // ── Listen on the WINDOW ──────────────────────────────────────
+  @HostListener('window:resize', ['$event'])
+  onResize(event: UIEvent): void {
+    const width = (event.target as Window).innerWidth;
+    console.log('Window resized to', width, 'px');
+  }
+
+  // ── Listen on the HOST with multiple events ───────────────────
+  @HostListener('mouseenter')
+  onEnter(): void {
+    console.log('Mouse entered the component');
+  }
+
+  @HostListener('mouseleave')
+  onLeave(): void {
+    console.log('Mouse left the component');
+  }
+
+  close(): void {
+    console.log('Modal closed');
+  }
+}
+```
+
+> [!NOTE]
+> `@HostListener('document:...')` attaches the listener to the global document. Angular **automatically removes it** when the component is destroyed. With `addEventListener` you'd have to remove it manually in `ngOnDestroy`.
+
+---
+
+#### API 3: `@Output` + `EventEmitter` — Traditional Child-to-Parent
+
+The classic Angular pattern for a child component raising a custom event that the parent listens to.
+
+```typescript
+import { Component, Output, EventEmitter } from '@angular/core';
+
+// ── CHILD — raises the event ──────────────────────────────────────
+@Component({
+  selector: 'app-task-card',
+  standalone: true,
+  template: `
+    <button (click)="onDeleteClick()">Delete</button>
+    <button (click)="onEditClick()">Edit</button>
+  `,
+})
+export class TaskCardComponent {
+  // EventEmitter<T> — T is the payload type
+  @Output() deleted = new EventEmitter<string>(); // emits the task ID
+  @Output() edited = new EventEmitter<Task>(); // emits the full task
+
+  // Called by template event binding
+  onDeleteClick(): void {
+    this.deleted.emit('task-123'); // sends string payload to parent
+  }
+
+  onEditClick(): void {
+    this.edited.emit({ id: 'task-123', title: 'Fix bug' }); // sends object
+  }
+}
+
+// ── PARENT — listens to the event ────────────────────────────────
+@Component({
+  standalone: true,
+  imports: [TaskCardComponent],
+  template: ` <app-task-card (deleted)="onTaskDeleted($event)" (edited)="onTaskEdited($event)" /> `,
+})
+export class TaskListComponent {
+  // $event matches the type T from EventEmitter<T>
+  onTaskDeleted(taskId: string): void {
+    console.log('Delete task:', taskId);
+  }
+
+  onTaskEdited(task: Task): void {
+    console.log('Edit task:', task.title);
+  }
+}
+```
+
+---
+
+#### API 4: `output()` — Modern Replacement for `@Output` + `EventEmitter`
+
+Cleaner syntax introduced in Angular 17. No need to import or instantiate `EventEmitter`.
+
+```typescript
+import { Component, output } from '@angular/core';
+
+// ── CHILD ─────────────────────────────────────────────────────────
+@Component({
+  selector: 'app-task-card',
+  standalone: true,
+  template: ` <button (click)="onDelete()">Delete</button> `,
+})
+export class TaskCardComponent {
+  // output<T>() — T is the payload type — much shorter than @Output
+  deleted = output<string>();
+  edited = output<Task>();
+
+  onDelete(): void {
+    this.deleted.emit('task-123'); // identical usage to EventEmitter
+  }
+}
+```
+
+**Side-by-side comparison:**
+
+| Feature                  | `@Output` + `EventEmitter`         | `output()`             |
+| :----------------------- | :--------------------------------- | :--------------------- |
+| Import count             | 3 (`Output`, `EventEmitter`, type) | 1 (`output`)           |
+| Works in template `( )`  | Yes                                | Yes                    |
+| Type safe                | Yes                                | Yes (better inference) |
+| Zoneless ready           | Partial                            | Yes                    |
+| Recommended for new code | Legacy                             | ✅ Yes                 |
+
+---
+
+#### API 5: `Renderer2` — Programmatic, SSR-Safe Event Listening
+
+Use when you need to attach event listeners **in TypeScript code** (not a template), and you need the code to work safely with SSR (server-side rendering). Never use `addEventListener` directly in Angular.
+
+```typescript
+import { Component, OnInit, OnDestroy, inject, ElementRef } from '@angular/core';
+import { Renderer2 } from '@angular/core';
+
+@Component({ selector: 'app-drag', standalone: true, template: `<div #box>Drag me</div>` })
+export class DragComponent implements OnInit, OnDestroy {
+  private renderer = inject(Renderer2);
+  private el = inject(ElementRef);
+  private unlisten!: () => void; // Renderer2 returns a cleanup function
+
+  ngOnInit(): void {
+    // Renderer2.listen() returns an "unlisten" function — save it
+    this.unlisten = this.renderer.listen(
+      this.el.nativeElement, // target element
+      'mousedown', // event name
+      (event: MouseEvent) => {
+        console.log('Drag started at', event.clientX, event.clientY);
+      },
+    );
+
+    // You can also listen to 'document' and 'window' safely
+    this.renderer.listen('document', 'mouseup', () => {
+      console.log('Drag ended');
+    });
+  }
+
+  ngOnDestroy(): void {
+    // MUST call the unlisten function to prevent memory leaks
+    this.unlisten();
+  }
+}
+```
+
+> [!WARNING]
+> Never use `element.addEventListener()` directly in Angular. It bypasses Zone.js (breaking change detection in non-Signal apps), doesn't work in SSR (no DOM on the server), and you must manually clean it up. Always use `Renderer2.listen()` or `@HostListener` instead.
+
+---
+
+#### Custom Event Directive — Reusable Event Logic
+
+When the same event behavior is needed on many elements, extract it into a **Directive** rather than repeating it in every component.
+
+```typescript
+import { Directive, output, HostListener } from '@angular/core';
+
+// Reusable directive that detects long press (500ms hold)
+@Directive({
+  selector: '[appLongPress]', // <button appLongPress>
+  standalone: true,
+})
+export class LongPressDirective {
+  // Custom output event — parent listens with (longPress)="..."
+  longPress = output<void>();
+
+  private pressTimeout!: ReturnType<typeof setTimeout>;
+
+  @HostListener('mousedown')
+  onMouseDown(): void {
+    this.pressTimeout = setTimeout(() => {
+      this.longPress.emit(); // fire the custom event after 500ms
+    }, 500);
+  }
+
+  @HostListener('mouseup')
+  @HostListener('mouseleave')
+  onRelease(): void {
+    clearTimeout(this.pressTimeout); // cancel if released early
+  }
+}
+
+// Usage in any template — no code duplication
+// <button appLongPress (longPress)="onLongPress()">Hold Me</button>
+```
+
+---
+
+#### The Complete Event API Decision Table
+
+| Situation                                   | Use                                        | Why                                |
+| :------------------------------------------ | :----------------------------------------- | :--------------------------------- |
+| Click / input / submit in template          | `(click)="handler()"`                      | Simplest, most readable            |
+| Listen to Escape / scroll / resize globally | `@HostListener('document:keydown.escape')` | Angular cleans up automatically    |
+| Child notifies parent — new code            | `output<T>()`                              | Less boilerplate, zoneless-ready   |
+| Child notifies parent — legacy code         | `@Output() + EventEmitter<T>`              | Still valid, widely used           |
+| Attach listener in TypeScript code          | `Renderer2.listen()`                       | SSR-safe, no Zone.js bypass        |
+| Reuse event behavior across elements        | Custom `@Directive` + `output()`           | DRY — one directive, many elements |
+| Direct DOM access                           | `ElementRef.nativeElement`                 | Last resort only — not SSR-safe    |
+
+#### 🧠 Interview & Mind-Working Questions
+
+**Q: What is `$event` in Angular event binding?**
+A: It is the native DOM event object (e.g., `MouseEvent`, `KeyboardEvent`, `InputEvent`). For custom `@Output` / `output()` events, `$event` is the payload type you defined (`string`, `Task`, etc.).
+
+**Q: What is the difference between `@HostListener` and `( )` template binding?**
+A: Template `( )` binding works on elements in the component's own template. `@HostListener` binds to the component's host element itself, or to `document`/`window`. Use `@HostListener` when you don't own the element in a template — for example, listening to keyboard shortcuts globally.
+
+**Q: Why use `Renderer2` instead of `element.addEventListener()`?**
+A: `addEventListener` bypasses Zone.js (breaking change detection in non-Signal apps), crashes in SSR (no DOM on the server), and requires manual cleanup. `Renderer2.listen()` handles all three problems automatically.
+
+**Q: Why does `output()` not need `EventEmitter`?**
+A: `output()` is a newer, leaner API that handles the parent-child event channel internally. `EventEmitter` is a class that wraps RxJS `Subject` — `output()` removes that dependency and is more tree-shakeable.
+
+**Q: When would you write a custom event Directive?**
+A: When the same event logic (double-click, long-press, drag-start, swipe) is needed on multiple unrelated elements. Instead of copying the `@HostListener` code into every component, you write it once as a Directive and apply it with an attribute: `<button appLongPress>`.
 
 ---
 
@@ -567,13 +1376,14 @@ Angular provides three ways to control how styles are applied to a component and
 > [!NOTE]
 > **ViewEncapsulation** is a TypeScript Enum that contains 3 values: `None`, `ShadowDom`, and `Emulated`.
 
-| Mode          | Effect                                                                 |
-| :------------ | :--------------------------------------------------------------------- |
-| **None**      | Styles are **Global**. They affect the entire app.                      |
-| **ShadowDom** | Styles use the browser's native Shadow DOM. They are fully scoped.    |
+| Mode          | Effect                                                               |
+| :------------ | :------------------------------------------------------------------- |
+| **None**      | Styles are **Global**. They affect the entire app.                   |
+| **ShadowDom** | Styles use the browser's native Shadow DOM. They are fully scoped.   |
 | **Emulated**  | **Default**. Angular "emulates" scoping by adding unique attributes. |
 
 #### Example Implementation:
+
 ```typescript
 @Component({
   selector: 'app-control',
@@ -584,6 +1394,7 @@ Angular provides three ways to control how styles are applied to a component and
 ```
 
 ### 🧠 Interview & Mind-Working Questions
+
 **Q: What is the default encapsulation in Angular?**
 A: `ViewEncapsulation.Emulated`. It ensures styles don't "leak" out of the component while still being compatible with all browsers.
 
@@ -605,6 +1416,7 @@ export class ButtonComponent {}
 ```
 
 **How to use it:**
+
 ```html
 <button appButton>Click Me</button>
 ```
@@ -1067,6 +1879,7 @@ _Analogy: A Treasure Chest in the browser that survives a voyage._
 Senior developers use **Content Projection** to create flexible "Wrapper" components like cards, modals, or form controls.
 
 #### 1. Multi-Slot Projection with `select`
+
 You can define multiple "slots" in your component where different types of content will be injected.
 
 ```html
@@ -1075,6 +1888,7 @@ You can define multiple "slots" in your component where different types of conte
 ```
 
 #### 2. Projection Fallbacks
+
 You can provide default content inside `<ng-content>` that will show if no content is projected.
 
 ```html
@@ -1084,6 +1898,7 @@ You can provide default content inside `<ng-content>` that will show if no conte
 ```
 
 #### 3. Advanced Projection with `ngProjectAs`
+
 Sometimes you need to project content into a specific slot even if the element doesn't match the selector. You can use the `ngProjectAs` attribute.
 
 ```html
@@ -1320,10 +2135,7 @@ Managing arrays in signals requires an **immutable mindset**. According to [Angu
 Use `.update()` to prepend or append a new item using the spread operator.
 
 ```typescript
-this.tasks.update((prevTasks) => [
-  { id: 't4', title: 'New Task' },
-  ...prevTasks
-]);
+this.tasks.update((prevTasks) => [{ id: 't4', title: 'New Task' }, ...prevTasks]);
 ```
 
 ### 2. Read
@@ -1360,118 +2172,6 @@ this.tasks.update((tasks) => tasks.filter((task) => task.id !== targetId));
 ---
 
 _Advanced Documentation designed for Senior Growth._
-
----
-
-## 🎨 Dynamic Styling: Class & Style Binding
-
-Angular provides multiple ways to dynamically apply CSS classes and inline styles to your elements based on the component's state.
-
-### 1. Class Binding `[class]`
-
-Class binding allows you to add or remove CSS classes based on a condition.
-
-- **Single Class**: `[class.name]="condition"`
-  ```html
-  <div [class.status-offline]="status() === 'offline'"></div>
-  ```
-- **Multiple Classes (Object Syntax)**:
-  ```html
-  <div [class]="{
-    'status-offline': status() === 'offline',
-    'status-online': status() === 'online',
-    'active': isActive
-  }"></div>
-  ```
-
-### 2. Style Binding `[style]`
-
-Style binding allows you to set inline styles dynamically.
-
-- **Single Style**: `[style.property]="value"`
-  ```html
-  <span [style.color]="status() === 'online' ? 'green' : 'red'">Server Status</span>
-  ```
-- **Multiple Styles (Object Syntax)**:
-  ```html
-  <div [style]="{
-    'color': status() === 'offline' ? 'red' : 'green',
-    'height': '100px',
-    'font-weight': isBold ? 'bold' : 'normal'
-  }"></div>
-  ```
-
-> [!TIP]
-> Use the **Object Syntax** when you need to manage multiple related classes or styles at once. It keeps your template much cleaner than multiple individual bindings!
-
----
-
-## 🏠 Component Host Elements Deep Dive
-
-Every Angular component is associated with a **Host Element**—the custom HTML element that matches the component's selector (e.g., `<app-header>`).
-
-### 1. The Host is Not a Placeholder
-Unlike some other frameworks, Angular does **not** replace the custom tag when the page is rendered. Instead, it "takes over" the element and enhances it with logic and a template.
-
-### 2. Styling the Host with `:host`
-Inside your component's CSS, use the `:host` selector to apply styles directly to the custom tag itself.
-
-```css
-:host {
-  display: block;
-  border: 1px solid #ccc;
-  padding: 1rem;
-}
-```
-
-### 3. Binding to the Host in `@Component`
-You can bind attributes, classes, and events to the host element directly in the component metadata.
-
-```typescript
-@Component({
-  selector: 'app-control',
-  host: {
-    'class': 'control-wrapper',
-    '(click)': 'onHostClick()'
-  }
-})
-export class ControlComponent {
-  onHostClick() { console.log('Host clicked!'); }
-}
-```
-
-### 4. Direct Host Access: `@HostBinding` & `@HostListener`
-For more dynamic control, you can use decorators inside the class:
-
-- **`@HostBinding`**: Binds a property to a host attribute or class.
-- **`@HostListener`**: Listens for events on the host element.
-
-```typescript
-export class ButtonComponent {
-  @HostBinding('class.active') isActive = true;
-
-  @HostListener('mouseenter') 
-  onHover() { /* ... */ }
-}
-```
-
-### 5. Accessing the DOM Programmatically: `ElementRef`
-Sometimes you need direct access to the underlying DOM element. You can inject `ElementRef` to get a reference to the host.
-
-```typescript
-import { inject, ElementRef } from '@angular/core';
-
-export class MyComponent {
-  private hostElement = inject(ElementRef).nativeElement;
-
-  ngOnInit() {
-    this.hostElement.focus(); // Example: Manual focus
-  }
-}
-```
-
-> [!CAUTION]
-> **Use ElementRef Sparingly!** Direct DOM manipulation can lead to security vulnerabilities (XSS) and issues with Server-Side Rendering (SSR). Always prefer Angular's built-in bindings (`[class]`, `[style]`, etc.) whenever possible.
 
 ---
 
@@ -1558,11 +2258,13 @@ Understanding the business logic is the first step before writing any code. The 
 4.  **Duration**: How many years the investment will grow.
 
 #### **The Mathematical Formula (Year-by-Year)**
+
 For every year in the duration, the app performs the following calculation:
--   **Interest Earned**: `Current Value * (Expected Return / 100)`
--   **New Value**: `Current Value + Interest Earned + Annual Investment`
--   **Total Interest**: `Current Value - (Annual Investment * Year) - Initial Investment`
--   **Total Invested**: `Initial Investment + (Annual Investment * Year)`
+
+- **Interest Earned**: `Current Value * (Expected Return / 100)`
+- **New Value**: `Current Value + Interest Earned + Annual Investment`
+- **Total Interest**: `Current Value - (Annual Investment * Year) - Initial Investment`
+- **Total Invested**: `Initial Investment + (Annual Investment * Year)`
 
 ---
 
@@ -1571,6 +2273,7 @@ For every year in the duration, the app performs the following calculation:
 We decentralized the logic to ensure the app is scalable and easy to test.
 
 #### **1. The Central "Brain": `investment.service.ts`**
+
 Instead of calculating inside a component, we use a service. **Why?** So any component in the app can access the results without recalculating them.
 
 ```typescript
@@ -1590,12 +2293,14 @@ export class InvestmentService {
 ```
 
 #### **2. Reactive Updates: `update()` vs `set()`**
--   **`set()`**: Replaces the entire array after calculation.
--   **`update()`**: Modifies based on previous state (e.g., adding a single item).
+
+- **`set()`**: Replaces the entire array after calculation.
+- **`update()`**: Modifies based on previous state (e.g., adding a single item).
 
 #### **3. Component Communication**
--   **UserInputs Component**: Uses `inject(InvestmentService)` to push new values and trigger `calculate()`.
--   **Results Component**: Reads the `annualData()` signal. Angular handles UI updates automatically.
+
+- **UserInputs Component**: Uses `inject(InvestmentService)` to push new values and trigger `calculate()`.
+- **Results Component**: Reads the `annualData()` signal. Angular handles UI updates automatically.
 
 ---
 
@@ -1626,6 +2331,7 @@ Angular tells you exactly which **Component**, **File**, and **Line Number** has
 ![Browser Debugger](public/images/browser-debugger.png)
 
 ### 💡 How to Debug Logic (Steps):
+
 1.  **Open DevTools**: Press `F12` → **Sources** tab.
 2.  **Set a Breakpoint**: Click a line number.
 3.  **Inspect Values**: Hover over variables or use the **Watch** window.
@@ -1635,9 +2341,9 @@ Angular tells you exactly which **Component**, **File**, and **Line Number** has
 
 ![Angular DevTools](public/images/angular-devtools.png)
 
--   **Component Tree**: See component relationships.
--   **Signal Observer**: Watch Signals change in real-time.
--   **State Inspection**: Check component properties without `console.log`.
+- **Component Tree**: See component relationships.
+- **Signal Observer**: Watch Signals change in real-time.
+- **State Inspection**: Check component properties without `console.log`.
 
 ### 🧠 Interview & Mind-Working Questions
 

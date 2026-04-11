@@ -10,3 +10,4 @@ import { NewTicket } from "./new-ticket/new-ticket";
 export class Tickets {
 
 }
+ 
