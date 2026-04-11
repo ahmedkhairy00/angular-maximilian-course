@@ -44,7 +44,7 @@ export class App {
     },
   ];
   maxTraffic = Math.max(...this.dummyTrafficData.map((data) => data.value));
-  currentStatus = 'online';
+  currentStatus = 'offline';
 
   // Note to pass string to Property binding we can use it 
   /* 

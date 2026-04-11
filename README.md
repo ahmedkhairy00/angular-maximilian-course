@@ -37,6 +37,442 @@ Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app w
 
 ---
 
+## 🏛️ Angular Architecture & Design Patterns — Senior Deep Dive
+
+> [!IMPORTANT]
+> This section documents the **architectural backbone** of Angular — the patterns that every senior developer must be able to name, draw, and explain in an interview.
+
+---
+
+### 🎯 Pattern 1: MVVM — Model · View · ViewModel
+
+> **Official Reference**: [Angular Docs — Components Overview](https://angular.dev/guide/components)
+
+Angular is built on the **MVVM (Model-View-ViewModel)** pattern. Every file you write maps to one of three layers.
+
+| Layer | Angular File | Responsibility |
+|:--|:--|:--|
+| **Model** | `service.ts` + `signal()` | Owns data and business logic. Zero knowledge of UI. |
+| **ViewModel** | `component.ts` | Bridge: reads from Model, exposes data to View via bindings. |
+| **View** | `component.html` | Pure display. Knows nothing about where data comes from. |
+
+#### Why MVVM and not MVC?
+
+In classic **MVC**, the Controller manually pushes data into the View — **imperative**. In **MVVM**, the ViewModel exposes reactive state and the View updates itself automatically — **declarative**. Angular's `signal()`, `computed()`, and `[(ngModel)]` implement this reactive contract.
+
+```mermaid
+graph LR
+    subgraph M ["🗄️ Model (service.ts)"]
+        S["signal state\nbusiness logic"]
+    end
+    subgraph VM ["🧠 ViewModel (component.ts)"]
+        C["inject + expose\ncomputed / methods"]
+    end
+    subgraph V ["🖥️ View (component.html)"]
+        T["bindings\n{{ }} [ ] ( )"]
+    end
+
+    S -- "inject() reads signal" --> C
+    C -- "[ ] property binding" --> T
+    T -- "( ) event binding" --> C
+    C -- "calls service method" --> S
+```
+
+> **Reading the diagram**: Green arrows carry **data** (Model → ViewModel → View). Orange arrows carry **commands** back (user events flow View → ViewModel → Model). The cycle is continuous and reactive.
+
+#### Code: All Three Layers Together
+
+```typescript
+// ── LAYER 1: MODEL ──────────────────────────────────
+@Injectable({ providedIn: 'root' })
+export class TaskService {
+  private _tasks = signal<Task[]>([]);
+  tasks = this._tasks.asReadonly();          // expose read-only
+
+  addTask(task: Task)   { this._tasks.update(p => [task, ...p]); }
+  removeTask(id: string){ this._tasks.update(p => p.filter(t => t.id !== id)); }
+}
+
+// ── LAYER 2: VIEWMODEL ───────────────────────────────
+@Component({ selector: 'app-task-list', ... })
+export class TaskListComponent {
+  private taskService = inject(TaskService);   // inject the Model
+
+  tasks     = this.taskService.tasks;          // expose to View
+  taskCount = computed(() => this.tasks().length);
+
+  onDelete(id: string) {
+    this.taskService.removeTask(id);           // ViewModel → Model
+  }
+}
+
+// ── LAYER 3: VIEW (template) ─────────────────────────
+// <p>Total: {{ taskCount() }}</p>
+// <div *ngFor="let task of tasks()">
+//   {{ task.title }}
+//   <button (click)="onDelete(task.id)">Delete</button>
+// </div>
+```
+
+#### 🧠 Interview & Mind-Working Questions
+
+**Q: What is the difference between MVVM and MVC?**
+A: MVC is imperative — the Controller pushes data to the View manually. MVVM is declarative — the ViewModel exposes reactive state and the View updates itself. Signals are Angular's MVVM engine.
+
+**Q: Which Angular file is the "ViewModel"?**
+A: `component.ts`. It injects Services (Model), transforms data with `computed()`, and exposes everything to the template (View) via bindings.
+
+**Q: Can the View talk directly to the Model (Service)?**
+A: No. The View talks only to the ViewModel through `( )` event bindings. The ViewModel calls Service methods. This separation makes apps testable.
+
+**Q: Why is MVVM useful on real projects?**
+A: Each layer has one job. You can swap the data source, redesign the template, or rewrite the component — without touching the other two layers.
+
+---
+
+### 🎭 Pattern 2: Decorator — What `@Component` Really Is
+
+> **Official Reference**: [Angular — Component Metadata](https://angular.dev/guide/components)
+> **TypeScript Reference**: [TypeScript Decorators](https://www.typescriptlang.org/docs/handbook/decorators.html)
+
+The **Decorator** is a Gang of Four structural pattern: *attach additional metadata or behavior to a class without modifying its source code*. In Angular, every `@` symbol — `@Component`, `@Injectable`, `@Input`, `@NgModule` — is a Decorator.
+
+#### What a Decorator Really Is
+
+A Decorator is a **plain function** that receives a class as its argument and attaches metadata to it. The Angular Ivy compiler reads this metadata at **build time** to generate optimized rendering instructions.
+
+```mermaid
+flowchart TD
+    A["You write:\n@Component({ selector: 'app-user' })\nexport class UserComponent {}"]
+    B["TypeScript compiles to:\nexport class UserComponent {}\nComponent({...})(UserComponent)"]
+    C["Angular Ivy Compiler\nreads metadata — BUILD TIME (AOT)"]
+    D["Generates optimized JS:\nview factory + change detection"]
+    E["Browser runs optimized bundle\n— zero decorator overhead"]
+
+    A --> B --> C --> D --> E
+```
+
+```typescript
+// What YOU write
+@Component({ selector: 'app-user', templateUrl: './user.html' })
+export class UserComponent {}
+
+// What TypeScript COMPILES it to (simplified)
+export class UserComponent {}
+Component({ selector: 'app-user', templateUrl: './user.html' })(UserComponent);
+//         ^─── plain function call that attaches metadata to the class
+```
+
+#### The Four Decorator Types Angular Uses
+
+| Type | Angular Examples | Applied To | Purpose |
+|:--|:--|:--|:--|
+| **Class** | `@Component` `@Injectable` `@NgModule` `@Pipe` | Whole class | Registers the class with Angular |
+| **Property** | `@Input` `@Output` `@ViewChild` `@ContentChild` | Class field | Marks a field for Angular's data-flow |
+| **Parameter** | `@Inject` `@Optional` `@Self` | Constructor param | Overrides DI token resolution |
+| **Method** | `@HostListener` | Class method | Binds a DOM event to the method |
+
+```typescript
+// CLASS Decorator — registers as injectable service
+@Injectable({ providedIn: 'root' })
+export class TaskService {}
+
+// PROPERTY Decorator — marks as parent-to-child input
+@Input({ required: true }) userId!: string;
+
+// PROPERTY Decorator — marks as child-to-parent event
+@Output() taskSelected = new EventEmitter<string>();
+
+// METHOD Decorator — binds Escape key to this method
+@HostListener('document:keydown.escape')
+onEscape() { this.closeModal(); }
+```
+
+> [!NOTE]
+> **Why Decorators instead of class inheritance?**
+> A class can only `extend` ONE parent. Decorators attach multiple behaviors to any class — component + injectable + route config — without a forced inheritance chain. This is **composition over inheritance**.
+
+#### 🧠 Interview & Mind-Working Questions
+
+**Q: What is a TypeScript Decorator at its core?**
+A: A plain function that receives a class as its argument and attaches metadata to it. Angular's Ivy compiler reads this metadata at build time to generate optimized rendering code.
+
+**Q: When does Angular read the `@Component` metadata?**
+A: At **build time** (AOT compilation). By the time the browser runs the app, all decorators have been compiled away. There is zero decorator overhead at runtime.
+
+**Q: What happens if you use a component in a template but forget `@Component`?**
+A: A build error: `X is not a known element`. Angular does not know the class is a component because no metadata was attached to it.
+
+**Q: Difference between `@Input` and `@Output` as decorator types?**
+A: Both are property decorators. `@Input` marks a field the **parent writes into** (data flows IN). `@Output` marks a field the **child emits through** (events flow OUT). The direction is the key difference.
+
+---
+
+### 🏗️ Pattern 3: Singleton — One Service, Whole App
+
+> **Official Reference**: [Angular Docs — Singleton Services](https://angular.dev/guide/di/singleton-services)
+
+The **Singleton** pattern ensures a class has only **one instance** for the entire application lifetime. In Angular, every `providedIn: 'root'` service is a Singleton managed by the root injector.
+
+```mermaid
+graph TD
+    subgraph Root ["Angular Root Injector — one instance per app"]
+        TS["TaskService\ntasks = signal([...])"]
+    end
+
+    A["TaskListComponent\ninject(TaskService)"]
+    B["HeaderComponent\ninject(TaskService)"]
+    C["DashboardComponent\ninject(TaskService)"]
+
+    TS -- "same object reference" --> A
+    TS -- "same object reference" --> B
+    TS -- "same object reference" --> C
+```
+
+When one component calls `taskService.addTask()`, the signal updates and **all three components** re-render automatically — they all share the exact same signal reference.
+
+```typescript
+// ONE instance for the whole app
+@Injectable({ providedIn: 'root' })
+export class TaskService {
+  private _tasks = signal<Task[]>([]);
+  tasks = this._tasks.asReadonly();
+}
+
+// Component A and B get the SAME instance
+@Component({...}) export class ComponentA {
+  private svc = inject(TaskService); // same as ComponentB
+}
+@Component({...}) export class ComponentB {
+  private svc = inject(TaskService); // same as ComponentA
+}
+```
+
+> [!WARNING]
+> Adding `providers: [MyService]` inside `@Component` creates a **NEW scoped instance** per component. It is destroyed when the component is destroyed. Use this intentionally for stateful services that must reset per component lifecycle.
+
+#### 🧠 Interview & Mind-Working Questions
+
+**Q: Why is `providedIn: 'root'` the default for most services?**
+A: It creates one shared instance, makes the service tree-shakeable (removed from the bundle if nothing injects it), and avoids declaring it in any module's `providers` array.
+
+**Q: What happens if you declare a service in `providers` of two different modules?**
+A: Each module gets its own separate instance. Use `providedIn: 'root'` or a shared module imported only once for a true singleton.
+
+---
+
+### 👁️ Pattern 4: Observer — Signals and EventEmitter
+
+> **Official Reference**: [Angular Docs — Signals](https://angular.dev/guide/signals)
+
+The **Observer** pattern: when a **Subject** changes state, all registered **Observers** are notified automatically. Angular implements this through Signals and EventEmitter.
+
+```mermaid
+graph LR
+    subgraph Subject ["Subject: signal(value)"]
+        SIG["tasks = signal([])"]
+    end
+
+    subgraph Observers ["Observers — auto-notified on change"]
+        O1["Component template\ntasks() in {{ }}"]
+        O2["computed()\nderived value"]
+        O3["effect()\nside-effect runner"]
+    end
+
+    SIG -- "tasks.set(new) notifies all" --> O1
+    SIG -- "tasks.update(fn) notifies all" --> O2
+    SIG -- "value changed — re-runs" --> O3
+```
+
+| Observer API | What it does | When to use |
+|:--|:--|:--|
+| `signal()` | Writable reactive value (the Subject) | Mutable state — tasks, user, cart |
+| `computed()` | Read-only derived value — lazy | Stats, filtered lists, transformations |
+| `effect()` | Side-effect runner on signal change | Logging, external sync, localStorage |
+| `output()` / `EventEmitter` | One-time event push — not stored | Parent-child communication |
+
+```typescript
+tasks = signal<Task[]>([]);
+
+// Observer 1 — recomputes when tasks changes
+completedCount = computed(() =>
+  this.tasks().filter(t => t.done).length
+);
+
+// Observer 2 — side-effect fires when tasks changes
+constructor() {
+  effect(() => {
+    localStorage.setItem('tasks', JSON.stringify(this.tasks()));
+  });
+}
+```
+
+#### 🧠 Interview & Mind-Working Questions
+
+**Q: What is the difference between `computed()` and `effect()`?**
+A: `computed()` returns a **value** (use in templates or other computeds). `effect()` runs a **side-effect** with no return value (use for storage, logging, external sync). `computed()` is lazy, `effect()` is eager.
+
+**Q: How is Observer better than calling update functions manually everywhere?**
+A: Components declare what they depend on, and Angular notifies automatically. Without Observer, every state change requires manually finding and updating every consumer — brittle and error-prone at scale.
+
+---
+
+### 🏠 Pattern 5: Facade — Services That Hide Complexity
+
+> **Official Reference**: [Angular Docs — Services and DI](https://angular.dev/guide/di)
+
+The **Facade** pattern provides a simple interface to a complex subsystem. An Angular Service acts as a Facade when it hides HTTP calls, caching, error handling, and multiple API endpoints behind a clean API that components call with one line.
+
+```mermaid
+graph LR
+    subgraph Comp ["Component (simple)"]
+        CO["taskService.loadTasks()"]
+    end
+
+    subgraph Facade ["TaskService — Facade"]
+        F1["HTTP call"] --> F2["map response"] --> F3["handle errors"] --> F4["update signal cache"]
+    end
+
+    subgraph Real ["Hidden complexity"]
+        H["HttpClient"]
+        E["ErrorService"]
+        L["LoadingService"]
+    end
+
+    CO --> F1
+    F1 --> H
+    F3 --> E
+    F1 --> L
+```
+
+```typescript
+// FACADE — component calls ONE simple method
+@Injectable({ providedIn: 'root' })
+export class TaskService {
+  private http = inject(HttpClient);
+  private errorService = inject(ErrorService);
+  private _tasks = signal<Task[]>([]);
+  tasks = this._tasks.asReadonly();
+
+  loadTasks(userId: string): void {
+    this.http.get<Task[]>(`/api/users/${userId}/tasks`).pipe(
+      map(tasks => tasks.filter(t => !t.archived)),
+      catchError(err => {
+        this.errorService.show('Failed to load tasks');
+        return of([]);
+      })
+    ).subscribe(tasks => this._tasks.set(tasks));
+  }
+}
+
+// COMPONENT — one line, no idea about HTTP / caching / errors
+@Component({...})
+export class TaskListComponent {
+  private taskService = inject(TaskService);
+  tasks = this.taskService.tasks;
+
+  ngOnInit() { this.taskService.loadTasks('user-1'); }
+}
+```
+
+#### 🧠 Interview & Mind-Working Questions
+
+**Q: What makes a Service a "Facade"?**
+A: When it hides multiple collaborators (HttpClient, ErrorService, CacheService) behind one simple method. The component does not know any collaborator exists.
+
+**Q: Why is the Facade pattern important for testing?**
+A: You mock one Facade instead of every collaborator separately. Tests become dramatically simpler.
+
+---
+
+### 🔌 Pattern 6: Strategy — DI as an Implementation Switcher
+
+> **Official Reference**: [Angular Docs — DI Providers](https://angular.dev/guide/di/dependency-injection-providers)
+
+The **Strategy** pattern: define a family of interchangeable algorithms behind one interface. In Angular, the **DI system** is the Strategy switcher — you inject an abstract class and Angular decides which concrete implementation to provide.
+
+```mermaid
+graph TD
+    subgraph Iface ["Abstract Strategy"]
+        I["LoggerService\nlog(message): void"]
+    end
+    subgraph Concrete ["Concrete Strategies"]
+        A["ConsoleLogger\nconsole.log(msg)"]
+        B["RemoteLogger\nHTTP POST /api/logs"]
+        C["SilentLogger\n— nothing —"]
+    end
+    subgraph Consumer ["Component — unaware of which strategy"]
+        CO["inject(LoggerService)\nthis.logger.log('event')"]
+    end
+
+    I --> A
+    I --> B
+    I --> C
+    A -- "dev environment" --> CO
+    B -- "production" --> CO
+```
+
+```typescript
+// Abstract Strategy
+abstract class LoggerService { abstract log(msg: string): void; }
+
+// Concrete Strategy A
+@Injectable() class ConsoleLogger extends LoggerService {
+  log(msg: string) { console.log('[DEV]', msg); }
+}
+
+// Concrete Strategy B
+@Injectable() class RemoteLogger extends LoggerService {
+  private http = inject(HttpClient);
+  log(msg: string) { this.http.post('/api/logs', { msg }).subscribe(); }
+}
+
+// DI switches the strategy based on environment
+// In app.config.ts:
+{ provide: LoggerService, useClass: environment.production ? RemoteLogger : ConsoleLogger }
+
+// Component — never knows WHICH logger it gets
+@Component({...}) export class PaymentComponent {
+  private logger = inject(LoggerService);
+  onPayment() { this.logger.log('Payment initiated'); }
+}
+```
+
+#### 🧠 Interview & Mind-Working Questions
+
+**Q: How does Angular's DI implement the Strategy pattern?**
+A: By letting you `provide` one abstract class but inject a different concrete one using `useClass`, `useValue`, or `useFactory`. The consumer only knows the interface.
+
+**Q: Give a real-world example of Strategy in Angular.**
+A: Feature flags — provide a real API service in production and a fake in-memory service in tests. Both implement the same abstract class. The component works identically in both environments.
+
+---
+
+### 🔑 All Six Patterns — Quick Reference
+
+```mermaid
+graph TD
+    MVVM["MVVM\nwho owns what\nService · Component · Template"]
+    DEC["Decorator\nhow classes get powers\n@Component @Injectable @Input"]
+    SING["Singleton\nprovidedIn root\none instance, shared state"]
+    OBS["Observer\nsignal computed effect\nauto-notification on change"]
+    FAC["Facade\nService hides complexity\ncomponents stay simple"]
+    STRAT["Strategy\nDI swaps implementations\nsame interface, different logic"]
+
+    MVVM --> DEC --> SING --> OBS --> FAC --> STRAT
+```
+
+| Pattern | Angular Implementation | One-Line Rule |
+|:--|:--|:--|
+| **MVVM** | Service + Component + Template | Data down, events up, model stays pure |
+| **Decorator** | `@Component` `@Injectable` `@Input` | Metadata at build time, not runtime |
+| **Singleton** | `providedIn: 'root'` | One instance shared by the whole app |
+| **Observer** | `signal()` `computed()` `effect()` | Declare dependencies; Angular notifies |
+| **Facade** | Service hiding HTTP/cache/errors | One method for the component; all complexity inside |
+| **Strategy** | `provide` + `useClass` | Same interface, different implementation per context |
+
+---
+
 ## 📚 Course Progress & Learning Path
 
 - [x] **Introduction to Angular**: A TypeScript-based framework by Google for building scalable Single-Page Applications (SPAs).
@@ -124,7 +560,54 @@ A: Template (HTML), Styles (CSS), Class (TS Logic), and Metadata (@Component dec
 **Q: Why do we use a selector?**
 A: It acts as a custom HTML tag (e.g., `<app-user>`) so we can place the component anywhere in our app.
 
+### 🛡️ View Encapsulation: Controlling Style Scope
+
+Angular provides three ways to control how styles are applied to a component and whether they affect the rest of the application.
+
+> [!NOTE]
+> **ViewEncapsulation** is a TypeScript Enum that contains 3 values: `None`, `ShadowDom`, and `Emulated`.
+
+| Mode          | Effect                                                                 |
+| :------------ | :--------------------------------------------------------------------- |
+| **None**      | Styles are **Global**. They affect the entire app.                      |
+| **ShadowDom** | Styles use the browser's native Shadow DOM. They are fully scoped.    |
+| **Emulated**  | **Default**. Angular "emulates" scoping by adding unique attributes. |
+
+#### Example Implementation:
+```typescript
+@Component({
+  selector: 'app-control',
+  templateUrl: './control.html',
+  styleUrl: './control.css',
+  encapsulation: ViewEncapsulation.None, // Styles become global
+})
+```
+
+### 🧠 Interview & Mind-Working Questions
+**Q: What is the default encapsulation in Angular?**
+A: `ViewEncapsulation.Emulated`. It ensures styles don't "leak" out of the component while still being compatible with all browsers.
+
 ---
+
+### 🏷️ Component Attribute Selectors
+
+Instead of using a component as an HTML tag (e.g., `<app-button>`), you can use it as an **Attribute** on an existing element (e.g., `<button appButton>`).
+
+**Why?** This prevents "Redundant DOM Elements." If you use `<app-button><button>...</button></app-button>`, you have an extra `app-button` tag in the DOM. Using an attribute selector keeps the DOM clean.
+
+```typescript
+@Component({
+  selector: 'button[appButton], a[appButton]', // Component applies to buttons/links with appButton attribute
+  standalone: true,
+  template: '<ng-content />',
+})
+export class ButtonComponent {}
+```
+
+**How to use it:**
+```html
+<button appButton>Click Me</button>
+```
 
 ---
 
@@ -410,7 +893,7 @@ _Events flow from Child ➡️ Parent_
 
 > [!NOTE]
 > **Senior Architect's Insight: Output vs EventEmitter**
-> While the traditional `@Output()` decorator requires the `EventEmitter` class, the newer `output()` function is leaner and more intuitive. It’s not a Signal itself (it doesn't store a value), but it handles the "Bottom-to-Top" event flow with significantly less code and superior type safety.
+> While the traditional `@Output()` decorator requires the `EventEmitter` class, the newer `output()` function is leaner and more intuitive. It's not a Signal itself (it doesn't store a value), but it handles the "Bottom-to-Top" event flow with significantly less code and superior type safety.
 
 ### 💡 How to use Component Outputs (Steps)
 
@@ -579,7 +1062,33 @@ _Analogy: A Treasure Chest in the browser that survives a voyage._
 - **Content Projection (<ng-content>)**: Allows you to create "wrapper" components that can accept and display content from their parent components.
 - **Pipes**: Transformers that take a value and return it in a different shape (e.g., `DatePipe`).
 
+### 🏗️ Advanced Content Projection: `<ng-content>` Selectors
 
+Senior developers use **Content Projection** to create flexible "Wrapper" components like cards, modals, or form controls.
+
+#### 1. Multi-Slot Projection with `select`
+You can define multiple "slots" in your component where different types of content will be injected.
+
+```html
+<!-- In control.html -->
+<ng-content select="input, textarea, select, button" />
+```
+
+#### 2. Projection Fallbacks
+You can provide default content inside `<ng-content>` that will show if no content is projected.
+
+```html
+<ng-content>
+  <p>Default content if nothing is provided!</p>
+</ng-content>
+```
+
+#### 3. Advanced Projection with `ngProjectAs`
+Sometimes you need to project content into a specific slot even if the element doesn't match the selector. You can use the `ngProjectAs` attribute.
+
+```html
+<app-button ngProjectAs="header">Click Me</app-button>
+```
 
 ### 6. Code Lessons Summary: Implementation Examples
 
@@ -812,7 +1321,7 @@ Use `.update()` to prepend or append a new item using the spread operator.
 
 ```typescript
 this.tasks.update((prevTasks) => [
-  { id: 't4', title: 'New Task', ... },
+  { id: 't4', title: 'New Task' },
   ...prevTasks
 ]);
 ```
@@ -851,6 +1360,118 @@ this.tasks.update((tasks) => tasks.filter((task) => task.id !== targetId));
 ---
 
 _Advanced Documentation designed for Senior Growth._
+
+---
+
+## 🎨 Dynamic Styling: Class & Style Binding
+
+Angular provides multiple ways to dynamically apply CSS classes and inline styles to your elements based on the component's state.
+
+### 1. Class Binding `[class]`
+
+Class binding allows you to add or remove CSS classes based on a condition.
+
+- **Single Class**: `[class.name]="condition"`
+  ```html
+  <div [class.status-offline]="status() === 'offline'"></div>
+  ```
+- **Multiple Classes (Object Syntax)**:
+  ```html
+  <div [class]="{
+    'status-offline': status() === 'offline',
+    'status-online': status() === 'online',
+    'active': isActive
+  }"></div>
+  ```
+
+### 2. Style Binding `[style]`
+
+Style binding allows you to set inline styles dynamically.
+
+- **Single Style**: `[style.property]="value"`
+  ```html
+  <span [style.color]="status() === 'online' ? 'green' : 'red'">Server Status</span>
+  ```
+- **Multiple Styles (Object Syntax)**:
+  ```html
+  <div [style]="{
+    'color': status() === 'offline' ? 'red' : 'green',
+    'height': '100px',
+    'font-weight': isBold ? 'bold' : 'normal'
+  }"></div>
+  ```
+
+> [!TIP]
+> Use the **Object Syntax** when you need to manage multiple related classes or styles at once. It keeps your template much cleaner than multiple individual bindings!
+
+---
+
+## 🏠 Component Host Elements Deep Dive
+
+Every Angular component is associated with a **Host Element**—the custom HTML element that matches the component's selector (e.g., `<app-header>`).
+
+### 1. The Host is Not a Placeholder
+Unlike some other frameworks, Angular does **not** replace the custom tag when the page is rendered. Instead, it "takes over" the element and enhances it with logic and a template.
+
+### 2. Styling the Host with `:host`
+Inside your component's CSS, use the `:host` selector to apply styles directly to the custom tag itself.
+
+```css
+:host {
+  display: block;
+  border: 1px solid #ccc;
+  padding: 1rem;
+}
+```
+
+### 3. Binding to the Host in `@Component`
+You can bind attributes, classes, and events to the host element directly in the component metadata.
+
+```typescript
+@Component({
+  selector: 'app-control',
+  host: {
+    'class': 'control-wrapper',
+    '(click)': 'onHostClick()'
+  }
+})
+export class ControlComponent {
+  onHostClick() { console.log('Host clicked!'); }
+}
+```
+
+### 4. Direct Host Access: `@HostBinding` & `@HostListener`
+For more dynamic control, you can use decorators inside the class:
+
+- **`@HostBinding`**: Binds a property to a host attribute or class.
+- **`@HostListener`**: Listens for events on the host element.
+
+```typescript
+export class ButtonComponent {
+  @HostBinding('class.active') isActive = true;
+
+  @HostListener('mouseenter') 
+  onHover() { /* ... */ }
+}
+```
+
+### 5. Accessing the DOM Programmatically: `ElementRef`
+Sometimes you need direct access to the underlying DOM element. You can inject `ElementRef` to get a reference to the host.
+
+```typescript
+import { inject, ElementRef } from '@angular/core';
+
+export class MyComponent {
+  private hostElement = inject(ElementRef).nativeElement;
+
+  ngOnInit() {
+    this.hostElement.focus(); // Example: Manual focus
+  }
+}
+```
+
+> [!CAUTION]
+> **Use ElementRef Sparingly!** Direct DOM manipulation can lead to security vulnerabilities (XSS) and issues with Server-Side Rendering (SSR). Always prefer Angular's built-in bindings (`[class]`, `[style]`, etc.) whenever possible.
 
 ---
 
@@ -955,182 +1576,77 @@ Instead of calculating inside a component, we use a service. **Why?** So any com
 ```typescript
 @Injectable({ providedIn: 'root' })
 export class InvestmentService {
-  // 1. Define State using Signals
   annualData = signal<any[]>([]);
 
-  // 2. The Calculation Method
   calculateInvestmentResults() {
     let investmentValue = this.initialInvestment();
     const results = [];
-
     for (let i = 0; i < this.duration(); i++) {
-      // Numerical Logic here...
-      results.push({ year: i + 1, valueEndOfYear: investmentValue, ... });
+      results.push({ year: i + 1, valueEndOfYear: investmentValue });
     }
-    
-    // 3. Update the Signal to notify the UI
     this.annualData.set(results);
   }
 }
 ```
 
 #### **2. Reactive Updates: `update()` vs `set()`**
-In the service, we use Signal methods to manage data:
--   **`set()`**: Used to replace the entire array of results after the calculation.
--   **`update()`**: Used when we want to modify a value based on its previous state (e.g., adding a single item).
+-   **`set()`**: Replaces the entire array after calculation.
+-   **`update()`**: Modifies based on previous state (e.g., adding a single item).
 
 #### **3. Component Communication**
 -   **UserInputs Component**: Uses `inject(InvestmentService)` to push new values and trigger `calculate()`.
--   **Results Component**: Simply "reads" the `annualData()` signal. Angular handles the UI updates automatically!
+-   **Results Component**: Reads the `annualData()` signal. Angular handles UI updates automatically.
 
 ---
 
 ### 🛡️ Senior Architect Review: Why this Architecture?
 
-1.  **Folder Structure (`/projects/`)**: Keeping secondary applications in a dedicated `projects` folder (Angular Workspace pattern) prevents the main `src` folder from becoming cluttered.
-2.  **Logic Separation**: By moving the formula to a Service, the Components remain "Dumb" (they only handle UI). This makes the code **DRY** (Don't Repeat Yourself) and **Testable**.
-3.  **Signal Efficiency**: Signals ensure that the Results table *only* refreshes when the specific data it needs changes, providing a premium, lag-free experience.
+1.  **Folder Structure (`/projects/`)**: Keeps the main `src` folder clean (Angular Workspace pattern).
+2.  **Logic Separation**: Service stays "Dumb" to UI. Code is DRY and Testable.
+3.  **Signal Efficiency**: Results table refreshes only when specific data changes.
 
----
+### 🛡️ Senior Architect Review: Where to Split Components?
+
+1.  **Separation of Concerns (SOLID)**: If a component handles UI + data + math, split it.
+2.  **Simplicity & Colocation**: Small projects: keep together. Large apps: split mandatory.
+3.  **The Team Standard**: Always follow your team's style guide.
 
 ---
 
 # 🔍 Debugging Angular Applications: A Professional Guide
 
-Debuging is one of the most important skills for a developer. In Angular, we have specialized tools to find and fix errors quickly.
-
 ## 1. Tracking Compilation Errors 🚨
-
-When you make a mistake in your code (like a typo or a missing import), the Angular Compiler will show an error in your terminal or browser.
 
 ![Compiler Error](public/images/compiler-error.png)
 
--   **The Benefit**: Angular tells you exactly which **Component**, which **File**, and which **Line Number** has the problem.
--   **Why it's important**: You don't have to guess where the bug is. Just look at the error message and jump to the red-underlined line!
+Angular tells you exactly which **Component**, **File**, and **Line Number** has the problem.
 
 ## 2. Using the Browser Debugger (Sources Tab) 🛠️
-
-For **Logical Errors** (where the code runs but doesn't do what you want), we use the browser's "Sources" tab.
 
 ![Browser Debugger](public/images/browser-debugger.png)
 
 ### 💡 How to Debug Logic (Steps):
-1.  **Open DevTools**: Press `F12` and go to the **Sources** tab.
-2.  **Set a Breakpoint**: Click on a line number where you want the code to "Pause."
-3.  **Inspect Values**: Hover over variables or look at the **Watch** window to see the actual data being sent.
-4.  **Step-by-Step**: Use the "Next Line" button to observe how the data changes as it moves through your methods.
+1.  **Open DevTools**: Press `F12` → **Sources** tab.
+2.  **Set a Breakpoint**: Click a line number.
+3.  **Inspect Values**: Hover over variables or use the **Watch** window.
+4.  **Step-by-Step**: Use the "Next Line" button.
 
 ## 3. Angular DevTools Extension 🛡️
 
-This is a specialized browser extension for Angular developers!
-
 ![Angular DevTools](public/images/angular-devtools.png)
 
--   **Component Tree**: See how your components relate to each other.
--   **Signal Observer**: Watch your **Signals** change in real-time. If you change a value in the extension, you can see if the UI reacts correctly.
--   **State Inspection**: Check the "Properties" of any component without adding `console.log` everywhere.
-
----
+-   **Component Tree**: See component relationships.
+-   **Signal Observer**: Watch Signals change in real-time.
+-   **State Inspection**: Check component properties without `console.log`.
 
 ### 🧠 Interview & Mind-Working Questions
 
 **Q: How do you find a logical error if the app isn't crashing?**
-A: Use the browser's **Sources** tab to set a breakpoint and "Step through" the code to see exactly where the data goes wrong.
+A: Use the browser's **Sources** tab to set a breakpoint and step through the code.
 
 **Q: Why is the Angular DevTools extension useful for Signals?**
-A: It allows you to observe the current value of a signal and even manually trigger changes to test reactivity without reloading the app.
+A: It lets you observe signal values and manually trigger changes to test reactivity without reloading.
 
 ---
 
 _Advanced Documentation designed for Senior Growth._
-
----
-
-### 🛡️ View Encapsulation: Controlling Style Scope
-
-Angular provides three ways to control how styles are applied to a component and whether they affect the rest of the application.
-
-> [!NOTE]
-> **ViewEncapsulation** is a TypeScript Enum that contains 3 values: `None`, `ShadowDom`, and `Emulated`.
-
-| Mode          | Effect                                                                 |
-| :------------ | :--------------------------------------------------------------------- |
-| **None**      | Styles are **Global**. They affect the entire app.                      |
-| **ShadowDom** | Styles use the browser's native Shadow DOM. They are fully scoped.    |
-| **Emulated**  | **Default**. Angular "emulates" scoping by adding unique attributes. |
-
-#### Example Implementation:
-```typescript
-@Component({
-  selector: 'app-control',
-  templateUrl: './control.html',
-  styleUrl: './control.css',
-  encapsulation: ViewEncapsulation.None, // Styles become global
-})
-```
-
-### 🧠 Interview & Mind-Working Questions
-**Q: What is the default encapsulation in Angular?**
-A: `ViewEncapsulation.Emulated`. It ensures styles don't "leak" out of the component while still being compatible with all browsers.
-
----
-
-### 🏷️ Component Attribute Selectors
-
-Instead of using a component as an HTML tag (e.g., `<app-button>`), you can use it as an **Attribute** on an existing element (e.g., `<button appButton>`).
-
-**Why?** This prevents "Redundant DOM Elements." If you use `<app-button><button>...</button></app-button>`, you have an extra `app-button` tag in the DOM. Using an attribute selector keeps the DOM clean.
-
-```typescript
-@Component({
-  selector: 'button[appButton], a[appButton]', // Component applies to buttons/links with appButton attribute
-  standalone: true,
-  template: '<ng-content />',
-})
-export class ButtonComponent {}
-```
-
-**How to use it:**
-```html
-<button appButton>Click Me</button>
-```
-
----
-
-### 🏗️ Advanced Content Projection: `<ng-content>` Selectors
-
-Senior developers use **Content Projection** to create flexible "Wrapper" components like cards, modals, or form controls.
-
-#### 1. Multi-Slot Projection with `select`
-You can define multiple "slots" in your component where different types of content will be injected.
-
-```html
-<!-- In control.html -->
-<ng-content select="input, textarea, select, button" />
-```
-
-#### 2. Projection Fallbacks
-You can provide default content inside `<ng-content>` that will show if no content is projected.
-
-```html
-<ng-content>
-  <p>Default content if nothing is provided!</p>
-</ng-content>
-```
-
-#### 3. Advanced Projection with `ngProjectAs`
-Sometimes you need to project content into a specific slot even if the element doesn't match the selector. You can use the `ngProjectAs` attribute.
-
-```html
-<app-button ngProjectAs="header">Click Me</app-button>
-```
-
----
-
-### 🛡️ Senior Architect Review: Where to Split Components?
-
-When deciding whether to break a large component into smaller ones, follow these senior-level guidelines:
-
-1.  **Separation of Concerns (SOLID)**: If a component is doing too many things (handling UI, fetching data, calculating math), split it.
-2.  **Simplicity & Colocation**: For very small projects, keeping code together is faster. For large apps, separation is mandatory.
-3.  **The Team Standard**: Always follow your team's style guide. There is no "perfect" right or wrong; it's about consistency and maintainability.

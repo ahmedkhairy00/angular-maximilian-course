@@ -1,6 +1,11 @@
-<div>
+<div [class]="{
+  status : true,
+  'status-offline': status() === 'offline',
+  'status-online': status() === 'online',
+  'status-unknown': status() !== 'offline' && status() !== 'online'
+}">
   @if (status() === 'online') {
-    <p>Servers are online</p>
+    <p>Servers are online</p> 
     <p>All systems are operational.</p>
   } @else if (status() === 'offline') {
     <p>Servers are offline</p>

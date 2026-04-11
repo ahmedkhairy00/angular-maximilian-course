@@ -107,3 +107,14 @@ Will Component
 
 */
 
+
+// Each Component Hast :host Selector 
+/* 
+host element => Is Simply That Selected By Component Selector
+That We Cans Style it in css
+:host{
+color : red;
+background : White;
+}
+
+*/
