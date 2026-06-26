@@ -2356,3 +2356,185 @@ A: It lets you observe signal values and manually trigger changes to test reacti
 ---
 
 _Advanced Documentation designed for Senior Growth._
+
+---
+
+# 🚀 Part 2: Advanced Component Architecture & Practical Patterns
+
+> [!IMPORTANT]
+> This section documents the practical patterns discovered during the development of the **App Life-Cycle** and **Traffic App** projects. These are the "missing pieces" that transition you from theoretical knowledge to real-world application mastery.
+
+---
+
+### 🔄 Pattern 12: Component Lifecycle & Cleanup — Beyond the Constructor
+
+> **Official Reference**: [Angular Docs — Component Lifecycle](https://angular.dev/guide/components/lifecycle)
+
+A component's life starts at the **Constructor** and ends at **Destruction**. A senior developer knows that the Constructor is purely for DI (Dependency Injection), and all application logic should wait for `ngOnInit`.
+
+![Lifecycle Timeline](public/images/angular_lifecycle_timeline.png)
+
+#### `ngOnInit` vs `constructor()`
+- **Constructor**: Runs when the class is instantiated. Component inputs are **undefined**.
+- **ngOnInit**: Runs after Angular completes initialization of the component's inputs. This is the correct place for HTTP calls and data setup.
+
+#### Cleanup & Memory Management
+To prevent memory leaks, you MUST clean up long-running tasks (like `setInterval` or RxJS subscriptions) when the component is destroyed.
+
+```typescript
+// THE SENIOR WAY: Using DestroyRef (Angular 16+)
+@Component({ ... })
+export class ServerStatus implements OnInit {
+  private destroyRef = inject(DestroyRef); // Functional alternative to ngOnDestroy
+
+  ngOnInit() {
+    const interval = setInterval(() => this.checkStatus(), 5000);
+
+    // Register cleanup immediately - easy to track
+    this.destroyRef.onDestroy(() => {
+      clearInterval(interval);
+      console.log('Cleanup complete!');
+    });
+  }
+}
+```
+
+#### 🧠 Interview & Mind-Working Questions
+**Q: Why shouldn't you make HTTP calls in the constructor?**
+A: Because at constructor-time, the component is not yet fully initialized by Angular. Inputs are undefined, and if the initialization fails later, you may have started an unnecessary side-effect.
+
+**Q: What is the benefit of `DestroyRef.onDestroy()` over `ngOnDestroy()`?**
+A: Reliability and Reusability. You can register cleanup logic anywhere in the class (like inside a specific method that starts a timer), and you don't need to implement the `OnDestroy` interface on the class itself.
+
+---
+
+### 🎭 Pattern 13: View Encapsulation — Controlling Style Scope
+
+> **Official Reference**: [Angular Docs — View Encapsulation](https://angular.dev/guide/components/view-encapsulation)
+
+Angular prevents styles from one component from "leaking" and breaking the rest of your app. This is called **View Encapsulation**.
+
+![View Encapsulation Comparison](public/images/angular_view_encapsulation.png)
+
+| Mode | Behavior | Use Case |
+| :--- | :--- | :--- |
+| **Emulated (Default)** | Angular adds unique attributes (e.g., `_ngcontent-x`) to scope CSS. | Standard component development. |
+| **None** | Styles are global. No scoping. | Global themes or styling third-party libraries. |
+| **ShadowDom** | Uses native browser Shadow DOM. | Creating strict reusable UI libraries. |
+
+```typescript
+@Component({
+  ...
+  encapsulation: ViewEncapsulation.None, // Be careful! This style will leak globaly
+})
+```
+
+---
+
+### 🏠 Pattern 14: Host Elements & Host Logic
+
+> **Official Reference**: [Angular Docs — Host Elements](https://angular.dev/guide/components/host-elements)
+
+Every component is rendered *into* a DOM element called the **Host Element** (matching your `selector`). You can control this element directly from your TypeScript class.
+
+![Host Element Interactions](public/images/angular_host_element.png)
+
+#### The `host` Property vs `@HostBinding`
+While you can use decorators like `@HostBinding`, the modern senior approach is using the `host` property in the `@Component` decorator for cleaner, more maintainable code.
+
+```typescript
+@Component({
+  selector: 'app-control',
+  host: {
+    class: 'control',              // Static Class
+    '[class.active]': 'isActive()', // Dynamic Signal Binding
+    '(click)': 'onHostClick()'     // Host Event Listener
+  }
+})
+export class ControlComponent {
+  private el = inject(ElementRef); // Direct access if needed
+
+  onHostClick() {
+    console.log('Clicked on:', this.el.nativeElement.localName);
+  }
+}
+```
+
+---
+
+### 🔌 Pattern 15: Content Projection — Slot-Based Architecture
+
+> **Official Reference**: [Angular Docs — Content Projection](https://angular.dev/guide/components/content-projection)
+
+How do you build a generic `<app-card>` that can hold any HTML inside it? You use **Content Projection** with `ng-content`.
+
+![Content Projection Slots](public/images/angular_content_projection.png)
+
+#### 1. Basic Projection
+```html
+<div>
+  <ng-content /> <!-- Content from parent goes here -->
+</div>
+```
+
+#### 2. Multi-Slot Projection (The "Named Slot" Pattern)
+```html
+<label>
+  <ng-content select="span" /> <!-- ONLY spans go here -->
+</label>
+<ng-content select="input, textarea" /> <!-- Inputs go here -->
+```
+
+#### 3. Advanced Projection with `ngProjectAs`
+Sometimes you want to project a component into a specific slot without wrapping it in a redundant `<div>`.
+```html
+<!-- Component Template -->
+<ng-content select="icon" />
+
+<!-- Usage -->
+<app-button>
+  <app-icon ngProjectAs="icon" /> <!-- Projects directly into the 'icon' slot -->
+</app-button>
+```
+
+---
+
+### 🎯 Pattern 16: Attribute Selectors & Template Access
+
+> **Official Reference**: [Angular Docs — Attribute Selectors](https://angular.dev/guide/components/selectors)
+
+Senior developers optimize the DOM tree. Instead of nesting `<app-button><button>...</button></app-button>`, they use **Attribute Selectors** to turn a native element into an Angular component.
+
+![Attribute Selector Nesting](public/images/angular_attribute_selector.png)
+
+#### Attribute Selectors
+```typescript
+@Component({
+  selector: 'button[appButton]', // Targets <button appButton>
+  template: `<span><ng-content /></span>`
+})
+export class ButtonComponent {}
+```
+
+#### Template Access: `@ViewChild` & Ref Variables
+Need to access a DOM element or another component instance in your TypeScript? Use `#ref` and `@ViewChild`.
+
+```typescript
+@Component({
+  template: `
+    <form #formRef>...</form>
+    <app-control #ctrl />
+  `
+})
+export class Dashboard {
+  // Access the native form
+  @ViewChild('formRef') form?: ElementRef<HTMLFormElement>;
+
+  // Access the component instance (and its methods!)
+  @ViewChild(ControlComponent) ctrl?: ControlComponent;
+
+  onSubmit() {
+    this.form?.nativeElement.reset();
+  }
+}
+```
